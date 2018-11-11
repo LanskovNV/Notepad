@@ -1,0 +1,3 @@
+﻿  view.c
+d:\yandexdisk\notepad\src\view.c(25): warning C4715: 'DialogProcedure': not all control paths return a value
+  vsProj.vcxproj -> D:\YandexDisk\Notepad\vsProj\Debug\vsProj.exe

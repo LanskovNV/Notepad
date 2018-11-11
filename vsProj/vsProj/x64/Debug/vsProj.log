@@ -1,0 +1,1 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.BuildSteps.Targets(173,5): error MSB3061: Unable to delete file "x64\Debug\vsProj.tlog\vsProj.lastbuildstate". Access to the path 'D:\MEGA\Notepad\vsProj\vsProj\x64\Debug\vsProj.tlog\vsProj.lastbuildstate' is denied.
