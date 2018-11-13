@@ -110,6 +110,8 @@ void LoadText(MYTEXT *text, char *fileName)
 	text->strings = NULL;
 	text->WidthStrings = NULL;
 	text->buffer = NULL;
+	text->mode = classic;
+
 	//Открываем файл
 	HANDLE hFile = CreateFile(fileName,
 		GENERIC_READ,
@@ -167,5 +169,9 @@ void OpenFileFunc(HWND hWnd, MYTEXT *text)
 	InvalidateRect(hWnd, NULL, TRUE);
 }
 
+LPSTR SelectMode(MYTEXT text)
+{
+	return text.mode == classic ? text.strings : text.WidthStrings;
+}
 
 

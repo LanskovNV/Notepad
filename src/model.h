@@ -28,5 +28,6 @@ typedef struct tagMYTEXT {
 void LoadText(MYTEXT *text, char *fileName);
 void OpenFileFunc(HWND hWnd, MYTEXT *text);
 void BuildWidthText(MYTEXT *text, DWORD width, TEXTMETRIC tm);
+LPSTR SelectMode(MYTEXT text);
 
 #endif // MODEL_H_INCLUDED
