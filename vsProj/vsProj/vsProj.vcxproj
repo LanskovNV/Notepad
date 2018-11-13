@@ -117,11 +117,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\model.h" />
+    <ClInclude Include="..\..\src\text.h" />
     <ClInclude Include="..\..\src\view.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.c" />
     <ClCompile Include="..\..\src\model.c" />
+    <ClCompile Include="..\..\src\text.c" />
     <ClCompile Include="..\..\src\view.c" />
   </ItemGroup>
   <ItemGroup>

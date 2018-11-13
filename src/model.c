@@ -1,20 +1,9 @@
 #include <windows.h>
 #include <string.h>
 #include "model.h"
+#include "text.h"
 
-static DWORD GetNumLines(LPSTR text)
-{
-	DWORD cnt = 0;
-	int i;
-
-	for (i = 0; text[i] != '\0'; i++)
-		if (text[i] == '\n')
-			cnt++;
-
-	return i == 0 ? 0 : ++cnt;
-}
-
-static LPSTR *ParseBuffer(LPSTR buffer, int nOfLines, DWORD *width)
+LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 {
 	int i, j, prewLineEnd = 0;
 	DWORD cnt = 0, maxW = 0;
@@ -62,6 +51,45 @@ static LPSTR *ParseBuffer(LPSTR buffer, int nOfLines, DWORD *width)
 	return strings;
 }
 
+LPSTR *BuildWidthStrings(LPSTR buffer, DWORD width, DWORD maxWidth)
+{
+	LPSTR *widthStrings;
+	int i;
+
+	int nOfLines = strlen(buffer) / width + 1;
+	
+	if (width > maxWidth)
+		nOfLines += NumOfBreaks(buffer, width);
+		
+
+	widthStrings = (CHAR**)calloc(nOfLines, sizeof(CHAR*));
+	for (i = 0; i < nOfLines; i++)
+	{
+		DWORD len1, len2;
+
+		widthStrings[i] = (CHAR**)calloc(width + 1, sizeof(CHAR));
+		while (*buffer != '\0')
+		{
+			while (isspace(*buffer) && *buffer != '\0')
+				buffer++;
+
+			if ((len1 = GetWordLength(buffer)) <= width - (len2 = sizeof(widthStrings[i]))) // если слово влезает
+			{
+				int length = len1 == width - len2 ? len1 : len1 + 1;
+				strncat(widthStrings[i], buffer, length);                                   // прибавь его к строке
+				buffer += length;
+			}
+			else if (len1 > width && len2 == 0)                                             // если не влезает в пустую строку
+			{
+				strncat(widthStrings[i], buffer, width);                                    // копируем сколько влезает 
+				buffer += width;
+			}
+		}
+	}
+
+	return widthStrings;
+}
+
 static void ClearText(MYTEXT *text)
 {
 	int i;
@@ -75,20 +103,48 @@ static void ClearText(MYTEXT *text)
 	text->maxWidth = 0;
 }
 
-static DWORD GetWordWidth(LPSTR word, DWORD len, TEXTMETRIC tm)
+void LoadText(MYTEXT *text, char *fileName)
 {
-	DWORD ans = 0;
+	text->numLines = 0;
+	text->maxWidth = 0;
+	text->strings = NULL;
+	text->WidthStrings = NULL;
+	text->buffer = NULL;
+	//Открываем файл
+	HANDLE hFile = CreateFile(fileName,
+		GENERIC_READ,
+		FILE_SHARE_READ,
+		NULL,
+		OPEN_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL,
+		NULL);
 
-
+	DWORD iNumRead = 0; //Обязательный параметр. получает кол-во считанных байт
+	DWORD fileSize = GetFileSize(hFile, NULL);
+	OVERLAPPED olf = { 0 }; //Структура, в которой задана позиция в файле
+	LARGE_INTEGER li = { 0 };
+	li.QuadPart = 0;
+	olf.Offset = li.LowPart;
+	olf.OffsetHigh = li.HighPart;
+ 
+	text->buffer = (CHAR*)calloc(fileSize + 1, sizeof(CHAR));
+	/* TODO: errors detect correctly!!! */
+	if (!ReadFile(hFile, text->buffer, fileSize, &iNumRead, &olf))
+	{
+		CloseHandle(hFile);
+	}
+	else if (olf.Internal == -1 && GetLastError())
+	{
+		CloseHandle(hFile);
+	}
+	else
+	{
+		text->numLines = GetNumLines(text->buffer);
+		text->strings = ParseBuffer(text->buffer, text->numLines, &text->maxWidth);
+		CloseHandle(hFile);
+	}	
 }
 
-void BuildWidthText(MYTEXT *text, DWORD width, TEXTMETRIC tm)
-{
-	int i;
-	text->maxWidth = width;
-
-
-}
 void OpenFileFunc(HWND hWnd, MYTEXT *text)
 {
 	OPENFILENAME ofn;
@@ -111,58 +167,5 @@ void OpenFileFunc(HWND hWnd, MYTEXT *text)
 	InvalidateRect(hWnd, NULL, TRUE);
 }
 
-void LoadText(MYTEXT *text, char *fileName)
-{
-	text->numLines = 0;
-	text->maxWidth = 0;
-	text->strings = NULL;
-	text->WidthStrings = NULL;
-	text->buffer = NULL;
-	//Открываем файл
-	HANDLE hFile = CreateFile(fileName,
-		GENERIC_READ,
-		FILE_SHARE_READ,
-		NULL,
-		OPEN_ALWAYS,
-		FILE_ATTRIBUTE_NORMAL,
-		NULL);
 
-	DWORD fileSize = GetFileSize(hFile, NULL);
-	OVERLAPPED olf = { 0 }; //Структура, в которой задана позиция в файле
-	//Аналог LARGE_INTEGER
-	//hEvent - ставим NULL
-	//Offset младший разряд того, куда поставить курсор. 32-бит
-	//OffsetHigh - старший разряд того, куда поставить курсор. 32-бит
-	//Internal - ставим NULL(0). Это - возвращаемое значение, куда записывается новая поз. курсора
-	//32-бит, младший разряд
-	//InternalHigh - тоже что и предыдущее, только старший разряд
 
-	//Как объеденять и разъеденять:
-	LARGE_INTEGER li = { 0 };
-	//LowPart - младший 32-битный разряд
-	//HighPart - старший 32-битный разряд
-	//QuadPart - 64 битное число
-	li.QuadPart = 0;
-	olf.Offset = li.LowPart;
-	olf.OffsetHigh = li.HighPart;
- 
-	text->buffer = (CHAR*)calloc(fileSize + 1, sizeof(CHAR));
-	DWORD iNumRead = 0; //Обязательный параметр. получает кол-во считанных байт
-	
-	/* TODO: errors detect correctly!!! */
-
-	if (!ReadFile(hFile, text->buffer, fileSize, &iNumRead, &olf))
-	{
-		CloseHandle(hFile);
-	}
-	else if (olf.Internal == -1 && GetLastError())
-	{
-		CloseHandle(hFile);
-	}
-	else
-	{
-		text->numLines = GetNumLines(text->buffer);
-		text->strings = ParseBuffer(text->buffer, text->numLines, &text->maxWidth);
-		CloseHandle(hFile);
-	}	
-}
