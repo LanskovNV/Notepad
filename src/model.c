@@ -51,23 +51,22 @@ LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 	return strings;
 }
 
-LPSTR *BuildWidthStrings(LPSTR buffer, DWORD width, DWORD maxWidth)
+LPSTR *BuildWidthStrings(MYTEXT *text, DWORD width)
 {
 	LPSTR *widthStrings;
+	LPSTR buffer = text->buffer;
 	int i;
-
 	int nOfLines = strlen(buffer) / width + 1;
 	
-	if (width > maxWidth)
+	if (width > text->maxWidth)
 		nOfLines += NumOfBreaks(buffer, width);
 		
-
-	widthStrings = (CHAR**)calloc(nOfLines, sizeof(CHAR*));
+	widthStrings = (LPSTR*)calloc(nOfLines, sizeof(CHAR*));
 	for (i = 0; i < nOfLines; i++)
 	{
 		DWORD len1, len2;
 
-		widthStrings[i] = (CHAR**)calloc(width + 1, sizeof(CHAR));
+		widthStrings[i] = (LPSTR)calloc(width + 1, sizeof(CHAR));
 		while (*buffer != '\0')
 		{
 			while (isspace(*buffer) && *buffer != '\0')
@@ -92,24 +91,28 @@ LPSTR *BuildWidthStrings(LPSTR buffer, DWORD width, DWORD maxWidth)
 
 static void ClearText(MYTEXT *text)
 {
-	int i;
+	DWORD i;
 
 	for (i = 0; i < text->numLines; i++)
 		free(text->strings[i]);
+	for (i = 0; i < text->numWidthLines; i++)
+		free(text->widthStrings[i]);
 	free(text->strings);
+	free(text->widthStrings[i]);
 	free(text->buffer);
 	text->numLines = 0;
 	text->strings = NULL;
 	text->maxWidth = 0;
 }
 
-void LoadText(MYTEXT *text, char *fileName)
+void LoadText(MYTEXT *text, char *fileName, DWORD width)
 {
 	text->numLines = 0;
 	text->maxWidth = 0;
 	text->strings = NULL;
-	text->WidthStrings = NULL;
+	text->widthStrings = NULL;
 	text->buffer = NULL;
+	text->curWidth = width;
 	text->mode = classic;
 
 	//Открываем файл
@@ -130,6 +133,8 @@ void LoadText(MYTEXT *text, char *fileName)
 	olf.OffsetHigh = li.HighPart;
  
 	text->buffer = (CHAR*)calloc(fileSize + 1, sizeof(CHAR));
+	text->bufLen = strlren(text->buffer);
+
 	/* TODO: errors detect correctly!!! */
 	if (!ReadFile(hFile, text->buffer, fileSize, &iNumRead, &olf))
 	{
@@ -142,7 +147,8 @@ void LoadText(MYTEXT *text, char *fileName)
 	else
 	{
 		text->numLines = GetNumLines(text->buffer);
-		text->strings = ParseBuffer(text->buffer, text->numLines, &text->maxWidth);
+		text->strings = BuildStrings(text->buffer, text->numLines, &text->maxWidth);
+		BuildWidthStrings(text);
 		CloseHandle(hFile);
 	}	
 }
