@@ -74,8 +74,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	static MYTEXT text;
 	LPSTR *curStrings = NULL;
     RECT rect;
-
+	DWORD curLen = 0;
 	GetClientRect(hwnd, &rect);
+
+	if (text.numLines == 0)
+		LoadText(&text, FILE_NAME);
+
 	switch (iMsg)
 	{
 	case WM_CREATE:
@@ -87,8 +91,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		ReleaseDC(hwnd, hdc);
 		iMaxWidth = text.maxWidth;// 40 * cxChar + 22 * cxCaps;
 		
-		if (text.numLines == 0)
-			LoadText(&text, FILE_NAME, rect.right);
 		return 0;
 	case WM_SIZE:
 		cxClient = LOWORD(lParam);
@@ -101,6 +103,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		iHscrollPos = min(iHscrollPos, iHscrollMax);
 		SetScrollRange(hwnd, SB_HORZ, 0, iHscrollMax, FALSE);
 		SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);
+		if (text.mode == width)
+		{
+			GetClientRect(hwnd, &rect);
+			BuildWidthStrings(&text, rect.right, cxChar);
+		}
 		return 0;
 	case WM_KEYDOWN:
 		switch (wParam)
@@ -197,11 +204,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	case WM_PAINT:
+		curStrings = SelectStrings(text);
+		curLen = SelectNOfLines(text);
 		hdc = BeginPaint(hwnd, &ps);
 		iPaintBeg = max(0, iVscrollPos + ps.rcPaint.top / cyChar - 1);
-		iPaintEnd = min((int)text.numLines, iVscrollPos + ps.rcPaint.bottom / cyChar);
-		curStrings = SelectMode(text);
-
+		iPaintEnd = min((int)curLen, iVscrollPos + ps.rcPaint.bottom / cyChar);
+		
 		for (i = iPaintBeg; i < iPaintEnd; i++)
 		{
 			x = cxChar * (1 - iHscrollPos);
@@ -232,6 +240,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		case IDM_WIDTH: // assumes that IDM_WHITE
 			text.mode = width;
+			BuildWidthStrings(&text, rect.right, cxChar);
 			CheckMode(hwnd, iSelection, hMenu, wParam);
 			return 0;
 		}

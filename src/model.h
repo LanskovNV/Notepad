@@ -17,6 +17,7 @@ typedef struct tagMYTEXT {
 	DWORD curWidth;
 	DWORD numWidthLines;
 	DWORD maxWidth;
+	DWORD maxWordLen;
 	DWORD bufLen;
 	LPSTR *strings; // all text separated by origin strings
 	LPSTR *widthStrings; // 
@@ -26,10 +27,10 @@ typedef struct tagMYTEXT {
 /**
  * functions to work with text
 */
-void LoadText(MYTEXT *text, char *fileName, DWORD width);
+void LoadText(MYTEXT *text, char *fileName);
 void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width);
-LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width);
-void BuildWidthText(MYTEXT *text, DWORD width, TEXTMETRIC tm);
-LPSTR *SelectMode(MYTEXT text);
+void BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize);
+DWORD SelectNOfLines(MYTEXT text);
+LPSTR *SelectStrings(MYTEXT text);
 
 #endif // MODEL_H_INCLUDED

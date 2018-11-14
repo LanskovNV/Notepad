@@ -5,5 +5,6 @@ DWORD GetNumLines(LPSTR text);
 DWORD GetWordLength(LPSTR text);
 DWORD GetMaxWordLen(LPSTR text);
 DWORD NumOfBreaks(LPSTR text,DWORD width);
+BOOL IsSpace(char c);
 
 #endif

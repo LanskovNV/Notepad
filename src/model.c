@@ -51,16 +51,17 @@ LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 	return strings;
 }
 
-LPSTR *BuildWidthStrings(MYTEXT *text, DWORD width)
+void BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 {
 	LPSTR *widthStrings;
 	LPSTR buffer = text->buffer;
 	int i;
-	int nOfLines = strlen(buffer) / width + 1;
-	
-	if (width < text->maxWidth)
+	int nOfLines = text->bufLen * cxSize / width + 2;
+
+	text->curWidth = width;
+	if (width < text->maxWordLen * cxSize)
 		nOfLines += NumOfBreaks(buffer, width);
-		
+
 	widthStrings = (LPSTR*)calloc(nOfLines, sizeof(CHAR*));
 	for (i = 0; i < nOfLines; i++)
 	{
@@ -69,12 +70,14 @@ LPSTR *BuildWidthStrings(MYTEXT *text, DWORD width)
 		widthStrings[i] = (LPSTR)calloc(width + 1, sizeof(CHAR));
 		while (*buffer != '\0')
 		{
-			while (isspace(*buffer) && *buffer != '\0')
+			while (IsSpace(*buffer) && *buffer != '\0')
 				buffer++;
 
-			if ((len1 = GetWordLength(buffer)) <= width - (len2 = sizeof(widthStrings[i]))) // если слово влезает
+			len1 = GetWordLength(buffer) * cxSize;
+			len2 = strlen(widthStrings[i]) * cxSize;
+			if (len1 + cxSize <= width - len2) // если слово влезает
 			{
-				int length = len1 == width - len2 ? len1 : len1 + 1;
+				int length = len1 == width - len2 / cxSize ? len1 / cxSize : len1 / cxSize + 1;
 				strncat(widthStrings[i], buffer, length);                                   // прибавь его к строке
 				buffer += length;
 			}
@@ -82,21 +85,26 @@ LPSTR *BuildWidthStrings(MYTEXT *text, DWORD width)
 			{
 				strncat(widthStrings[i], buffer, width);                                    // копируем сколько влезает 
 				buffer += width;
+				break;
+			}
+			else
+			{
+				break;
 			}
 		}
 	}
 
-	return widthStrings;
+	text->numWidthLines = nOfLines;
+	text->widthStrings = widthStrings;
 }
 
-void LoadText(MYTEXT *text, char *fileName, DWORD width)
+void LoadText(MYTEXT *text, char *fileName)
 {
 	text->numLines = 0;
 	text->maxWidth = 0;
 	text->strings = NULL;
-	text->widthStrings = NULL;
 	text->buffer = NULL;
-	text->curWidth = width;
+	text->curWidth = 0;
 	text->mode = classic;
 
 	//Открываем файл
@@ -117,7 +125,6 @@ void LoadText(MYTEXT *text, char *fileName, DWORD width)
 	olf.OffsetHigh = li.HighPart;
  
 	text->buffer = (CHAR*)calloc(fileSize + 1, sizeof(CHAR));
-	text->bufLen = strlen(text->buffer);
 
 	/* TODO: errors detect correctly!!! */
 	if (!ReadFile(hFile, text->buffer, fileSize, &iNumRead, &olf))
@@ -130,10 +137,10 @@ void LoadText(MYTEXT *text, char *fileName, DWORD width)
 	}
 	else
 	{
-		text->maxWidth = GetMaxWordLen(text->buffer);
+		text->bufLen = strlen(text->buffer);
+		text->maxWordLen = GetMaxWordLen(text->buffer);
 		text->numLines = GetNumLines(text->buffer);
 		text->strings = BuildStrings(text->buffer, text->numLines, &text->maxWidth);
-		BuildWidthStrings(text, width);
 		CloseHandle(hFile);
 	}	
 }
@@ -171,14 +178,18 @@ void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width)
 	GetOpenFileName(&ofn);
 
 	ClearText(text);
-	LoadText(text, ofn.lpstrFile, width);
+	LoadText(text, ofn.lpstrFile);
 
 	InvalidateRect(hWnd, NULL, TRUE);
 }
 
-LPSTR *SelectMode(MYTEXT text)
+LPSTR *SelectStrings(MYTEXT text)
 {
 	return text.mode == classic ? text.strings : text.widthStrings;
 }
 
+DWORD SelectNOfLines(MYTEXT text)
+{
+	return text.mode == classic ? text.numLines : text.numWidthLines;
+}
 

@@ -1,6 +1,13 @@
 #include <windows.h>
-#include <ctype.h>
 #include "text.h"
+
+BOOL IsSpace(char c)
+{
+	if (c == '\0' || c == '\r' || c == '\t' || c == '\n' || c == ' ')
+		return TRUE;
+	else
+		return FALSE;
+}
 
 DWORD GetNumLines(LPSTR text)
 {
@@ -18,10 +25,10 @@ DWORD GetWordLength(LPSTR text)
 {
 	DWORD cnt = 0;
 
-	while (isspace(*text))
+	while (IsSpace(*text))
 		text++;
 
-	while (!isspace(*text))
+	while (!IsSpace(*text))
 	{
 		cnt++;
 		text++;
@@ -34,12 +41,12 @@ DWORD GetMaxWordLen(LPSTR text)
 {
 	DWORD cnt = 0, max = 0;
 
-	while (isspace(*text))
+	while (IsSpace(*text))
 		text++;
 
 	while (*text != '\0')
 	{
-		if (isspace(*text))
+		if (IsSpace(*text))
 		{
 			if (max < cnt)
 				max = cnt;
@@ -60,7 +67,7 @@ DWORD NumOfBreaks(LPSTR text, DWORD width)
 
 	while (*text != '\0')
 	{
-		while (isspace(*text) && *text != '\0')
+		while (IsSpace(*text) && *text != '\0')
 			text++;
 
 		if ((len = GetWordLength(text)) > width)

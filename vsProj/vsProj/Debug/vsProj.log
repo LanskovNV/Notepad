@@ -1,18 +1,2 @@
 ﻿  main.c
-d:\poly\notepad\src\main.c(27): warning C4133: =: несовместимые типы - из "char *" в "LPCWSTR"
-d:\poly\notepad\src\main.c(32): warning C4133: функция: несовместимые типы - из "char [14]" в "LPCWSTR"
-d:\poly\notepad\src\main.c(34): warning C4133: функция: несовместимые типы - из "char [6]" в "LPCWSTR"
-d:\poly\notepad\src\main.c(35): warning C4133: функция: несовместимые типы - из "char [6]" в "LPCWSTR"
-d:\poly\notepad\src\main.c(37): warning C4133: функция: несовместимые типы - из "char [9]" в "LPCWSTR"
-d:\poly\notepad\src\main.c(38): warning C4133: функция: несовместимые типы - из "char [7]" в "LPCWSTR"
-d:\poly\notepad\src\main.c(39): warning C4133: функция: несовместимые типы - из "char [6]" в "LPCWSTR"
-d:\poly\notepad\src\main.c(53): warning C4133: функция: несовместимые типы - из "char [8]" в "LPCWSTR"
-d:\poly\notepad\src\main.c(53): warning C4133: функция: несовместимые типы - из "char [10]" в "LPCWSTR"
-d:\poly\notepad\src\main.c(211): warning C4133: функция: несовместимые типы - из "LPSTR" в "LPCWSTR"
-  model.c
-d:\poly\notepad\src\model.c(103): warning C4133: функция: несовместимые типы - из "char *" в "LPCWSTR"
-d:\poly\notepad\src\model.c(165): warning C4133: =: несовместимые типы - из "char *" в "LPWSTR"
-d:\poly\notepad\src\model.c(168): warning C4133: =: несовместимые типы - из "char [32]" в "LPCWSTR"
-d:\poly\notepad\src\model.c(174): warning C4133: функция: несовместимые типы - из "LPWSTR" в "char *"
-  Создание кода...
-  vsProj.vcxproj -> D:\POLY\Notepad\vsProj\Debug\vsProj.exe
+  vsProj.vcxproj -> D:\POLITECH\Notepad\vsProj\Debug\vsProj.exe
