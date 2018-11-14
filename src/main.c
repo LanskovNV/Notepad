@@ -237,7 +237,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		case IDM_CLASSIC: // Note: Logic below
 			text.mode = classic;
 			CheckMode(hwnd, iSelection, hMenu, wParam);
-			return 0;
 		case IDM_WIDTH: // assumes that IDM_WHITE
 			text.mode = width;
 			BuildWidthStrings(&text, rect.right, cxChar);
