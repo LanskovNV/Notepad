@@ -1,7 +1,7 @@
 #ifndef MODEL_H_INCLUDED
 #define MODEL_H_INCLUDED
 
-#define FILE_NAME "преступление и наказание.txt"
+#define FILE_NAME "text1.txt"
 
 typedef enum {
 	classic,
@@ -26,10 +26,10 @@ typedef struct tagMYTEXT {
 /**
  * functions to work with text
 */
-void LoadText(MYTEXT *text, char *fileName);
-void OpenFileFunc(HWND hWnd, MYTEXT *text);
+void LoadText(MYTEXT *text, char *fileName, DWORD width);
+void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width);
 LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width);
 void BuildWidthText(MYTEXT *text, DWORD width, TEXTMETRIC tm);
-LPSTR SelectMode(MYTEXT text);
+LPSTR *SelectMode(MYTEXT text);
 
 #endif // MODEL_H_INCLUDED

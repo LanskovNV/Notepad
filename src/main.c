@@ -60,6 +60,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	}
 	return msg.wParam;
 }
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	static int cxChar, cxCaps, cyChar, cxClient, cyClient, iMaxWidth,
@@ -71,10 +72,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	TEXTMETRIC tm;
 	static int iSelection = IDM_CLASSIC;
 	static MYTEXT text;
+	LPSTR *curStrings = NULL;
+    RECT rect;
 
-	if (text.numLines == 0)
-      LoadText(&text, FILE_NAME);
-
+	GetClientRect(hwnd, &rect);
 	switch (iMsg)
 	{
 	case WM_CREATE:
@@ -85,6 +86,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		cyChar = tm.tmHeight + tm.tmExternalLeading;
 		ReleaseDC(hwnd, hdc);
 		iMaxWidth = text.maxWidth;// 40 * cxChar + 22 * cxCaps;
+		
+		if (text.numLines == 0)
+			LoadText(&text, FILE_NAME, rect.right);
 		return 0;
 	case WM_SIZE:
 		cxClient = LOWORD(lParam);
@@ -196,15 +200,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		hdc = BeginPaint(hwnd, &ps);
 		iPaintBeg = max(0, iVscrollPos + ps.rcPaint.top / cyChar - 1);
 		iPaintEnd = min((int)text.numLines, iVscrollPos + ps.rcPaint.bottom / cyChar);
-		
+		curStrings = SelectMode(text);
+
 		for (i = iPaintBeg; i < iPaintEnd; i++)
 		{
 			x = cxChar * (1 - iHscrollPos);
 			y = cyChar * (1 - iVscrollPos + i);
 			TextOut(
 				hdc, x, y,
-				text.strings[i],
-				strlen(text.strings[i])
+				curStrings[i],
+				strlen(curStrings[i])
 			);
 			SetTextAlign(hdc, TA_LEFT | TA_TOP);
 		}
@@ -216,17 +221,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		switch (LOWORD(wParam))
 		{
 		case IDM_OPEN:
-			OpenFileFunc(hwnd, &text);
+			OpenFileFunc(hwnd, &text, rect.right);
 			return 0;
 		case IDM_EXIT:
 			SendMessage(hwnd, WM_CLOSE, 0, 0L);
 			return 0;
 		case IDM_CLASSIC: // Note: Logic below
+			text.mode = classic;
+			CheckMode(hwnd, iSelection, hMenu, wParam);
+			return 0;
 		case IDM_WIDTH: // assumes that IDM_WHITE
-			CheckMenuItem(hMenu, iSelection, MF_UNCHECKED);
-			iSelection = LOWORD(wParam);
-			CheckMenuItem(hMenu, iSelection, MF_CHECKED);
-			InvalidateRect(hwnd, NULL, TRUE);
+			text.mode = width;
+			CheckMode(hwnd, iSelection, hMenu, wParam);
 			return 0;
 		}
 		return 0;

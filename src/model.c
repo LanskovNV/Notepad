@@ -58,7 +58,7 @@ LPSTR *BuildWidthStrings(MYTEXT *text, DWORD width)
 	int i;
 	int nOfLines = strlen(buffer) / width + 1;
 	
-	if (width > text->maxWidth)
+	if (width < text->maxWidth)
 		nOfLines += NumOfBreaks(buffer, width);
 		
 	widthStrings = (LPSTR*)calloc(nOfLines, sizeof(CHAR*));
@@ -89,22 +89,6 @@ LPSTR *BuildWidthStrings(MYTEXT *text, DWORD width)
 	return widthStrings;
 }
 
-static void ClearText(MYTEXT *text)
-{
-	DWORD i;
-
-	for (i = 0; i < text->numLines; i++)
-		free(text->strings[i]);
-	for (i = 0; i < text->numWidthLines; i++)
-		free(text->widthStrings[i]);
-	free(text->strings);
-	free(text->widthStrings[i]);
-	free(text->buffer);
-	text->numLines = 0;
-	text->strings = NULL;
-	text->maxWidth = 0;
-}
-
 void LoadText(MYTEXT *text, char *fileName, DWORD width)
 {
 	text->numLines = 0;
@@ -133,7 +117,7 @@ void LoadText(MYTEXT *text, char *fileName, DWORD width)
 	olf.OffsetHigh = li.HighPart;
  
 	text->buffer = (CHAR*)calloc(fileSize + 1, sizeof(CHAR));
-	text->bufLen = strlren(text->buffer);
+	text->bufLen = strlen(text->buffer);
 
 	/* TODO: errors detect correctly!!! */
 	if (!ReadFile(hFile, text->buffer, fileSize, &iNumRead, &olf))
@@ -146,14 +130,31 @@ void LoadText(MYTEXT *text, char *fileName, DWORD width)
 	}
 	else
 	{
+		text->maxWidth = GetMaxWordLen(text->buffer);
 		text->numLines = GetNumLines(text->buffer);
 		text->strings = BuildStrings(text->buffer, text->numLines, &text->maxWidth);
-		BuildWidthStrings(text);
+		BuildWidthStrings(text, width);
 		CloseHandle(hFile);
 	}	
 }
 
-void OpenFileFunc(HWND hWnd, MYTEXT *text)
+static void ClearText(MYTEXT *text)
+{
+	DWORD i;
+
+	for (i = 0; i < text->numLines; i++)
+		free(text->strings[i]);
+	for (i = 0; i < text->numWidthLines; i++)
+		free(text->widthStrings[i]);
+	free(text->strings);
+	free(text->widthStrings[i]);
+	free(text->buffer);
+	text->numLines = 0;
+	text->strings = NULL;
+	text->maxWidth = 0;
+}
+
+void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width)
 {
 	OPENFILENAME ofn;
 	char fileName[100];
@@ -170,14 +171,14 @@ void OpenFileFunc(HWND hWnd, MYTEXT *text)
 	GetOpenFileName(&ofn);
 
 	ClearText(text);
-	LoadText(text, ofn.lpstrFile);
+	LoadText(text, ofn.lpstrFile, width);
 
 	InvalidateRect(hWnd, NULL, TRUE);
 }
 
-LPSTR SelectMode(MYTEXT text)
+LPSTR *SelectMode(MYTEXT text)
 {
-	return text.mode == classic ? text.strings : text.WidthStrings;
+	return text.mode == classic ? text.strings : text.widthStrings;
 }
 
 

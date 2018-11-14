@@ -44,3 +44,11 @@ void DisplayDialog(HWND hwnd)
 	CreateWindowW(L"Button", L"no", WS_VISIBLE | WS_CHILD, 160, 20, 100, 40, hDlg, (HMENU)1, NULL, NULL); 
 	CreateWindowW(L"Button", L"yes", WS_VISIBLE | WS_CHILD, 20, 20, 100, 40, hDlg, (HMENU)2, NULL, NULL);
 }
+
+void CheckMode(HWND hwnd, int iSelection, HMENU hMenu, WPARAM wParam)
+{
+	CheckMenuItem(hMenu, iSelection, MF_UNCHECKED);
+	iSelection = LOWORD(wParam);
+	CheckMenuItem(hMenu, iSelection, MF_CHECKED);
+	InvalidateRect(hwnd, NULL, TRUE);
+}

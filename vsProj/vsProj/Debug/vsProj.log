@@ -1,30 +1,18 @@
 ﻿  main.c
+d:\poly\notepad\src\main.c(27): warning C4133: =: несовместимые типы - из "char *" в "LPCWSTR"
+d:\poly\notepad\src\main.c(32): warning C4133: функция: несовместимые типы - из "char [14]" в "LPCWSTR"
+d:\poly\notepad\src\main.c(34): warning C4133: функция: несовместимые типы - из "char [6]" в "LPCWSTR"
+d:\poly\notepad\src\main.c(35): warning C4133: функция: несовместимые типы - из "char [6]" в "LPCWSTR"
+d:\poly\notepad\src\main.c(37): warning C4133: функция: несовместимые типы - из "char [9]" в "LPCWSTR"
+d:\poly\notepad\src\main.c(38): warning C4133: функция: несовместимые типы - из "char [7]" в "LPCWSTR"
+d:\poly\notepad\src\main.c(39): warning C4133: функция: несовместимые типы - из "char [6]" в "LPCWSTR"
+d:\poly\notepad\src\main.c(53): warning C4133: функция: несовместимые типы - из "char [8]" в "LPCWSTR"
+d:\poly\notepad\src\main.c(53): warning C4133: функция: несовместимые типы - из "char [10]" в "LPCWSTR"
+d:\poly\notepad\src\main.c(211): warning C4133: функция: несовместимые типы - из "LPSTR" в "LPCWSTR"
   model.c
-d:\politech\notepad\src\model.c(59): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(59): warning C4047: 'function': 'const char *' differs in levels of indirection from 'int'
-d:\politech\notepad\src\model.c(59): warning C4024: 'strlen': different types for formal and actual parameter 1
-d:\politech\notepad\src\model.c(61): error C2065: 'maxWidth': undeclared identifier
-d:\politech\notepad\src\model.c(62): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(62): warning C4047: 'function': 'LPSTR' differs in levels of indirection from 'int'
-d:\politech\notepad\src\model.c(62): warning C4024: 'NumOfBreaks': different types for formal and actual parameter 1
-d:\politech\notepad\src\model.c(71): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(71): error C2100: illegal indirection
-d:\politech\notepad\src\model.c(73): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(73): error C2100: illegal indirection
-d:\politech\notepad\src\model.c(74): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(76): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(76): warning C4047: 'function': 'LPSTR' differs in levels of indirection from 'int'
-d:\politech\notepad\src\model.c(76): warning C4024: 'GetWordLength': different types for formal and actual parameter 1
-d:\politech\notepad\src\model.c(79): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(79): warning C4047: 'function': 'const char *' differs in levels of indirection from 'int'
-d:\politech\notepad\src\model.c(79): warning C4024: 'strncat': different types for formal and actual parameter 2
-d:\politech\notepad\src\model.c(80): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(84): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(84): warning C4047: 'function': 'const char *' differs in levels of indirection from 'int'
-d:\politech\notepad\src\model.c(84): warning C4024: 'strncat': different types for formal and actual parameter 2
-d:\politech\notepad\src\model.c(85): error C2065: 'buffer': undeclared identifier
-d:\politech\notepad\src\model.c(136): warning C4013: 'strlren' undefined; assuming extern returning int
-d:\politech\notepad\src\model.c(180): error C2039: 'WidthStrings': is not a member of 'tagMYTEXT'
-  d:\politech\notepad\src\model.h(14): note: see declaration of 'tagMYTEXT'
-d:\politech\notepad\src\model.c(180): warning C4033: 'SelectMode' must return a value
-  Generating Code...
+d:\poly\notepad\src\model.c(103): warning C4133: функция: несовместимые типы - из "char *" в "LPCWSTR"
+d:\poly\notepad\src\model.c(165): warning C4133: =: несовместимые типы - из "char *" в "LPWSTR"
+d:\poly\notepad\src\model.c(168): warning C4133: =: несовместимые типы - из "char [32]" в "LPCWSTR"
+d:\poly\notepad\src\model.c(174): warning C4133: функция: несовместимые типы - из "LPWSTR" в "char *"
+  Создание кода...
+  vsProj.vcxproj -> D:\POLY\Notepad\vsProj\Debug\vsProj.exe
