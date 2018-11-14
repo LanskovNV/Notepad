@@ -14,11 +14,12 @@ typedef enum {
 typedef struct tagMYTEXT {
 	mode_t mode;
 	DWORD numLines;
+	DWORD curWidth;
 	DWORD numWidthLines;
 	DWORD maxWidth;
 	DWORD bufLen;
 	LPSTR *strings; // all text separated by origin strings
-	LPSTR *WidthStrings; // 
+	LPSTR *widthStrings; // 
 	LPSTR buffer; // all text
 } MYTEXT;
 
@@ -27,6 +28,7 @@ typedef struct tagMYTEXT {
 */
 void LoadText(MYTEXT *text, char *fileName);
 void OpenFileFunc(HWND hWnd, MYTEXT *text);
+LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width);
 void BuildWidthText(MYTEXT *text, DWORD width, TEXTMETRIC tm);
 LPSTR SelectMode(MYTEXT text);
 
