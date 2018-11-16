@@ -56,8 +56,10 @@ int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 	LPSTR *widthStrings;
 	LPSTR buffer = text->buffer;
 	int i;
-	int nOfLines = text->bufLen * cxSize / width + 2;
-
+	int nOfLines;
+	
+    width -= cxSize * 10;
+	nOfLines = text->bufLen * cxSize / width + 1;
 	text->curWidth = width;
 	if (width < text->maxWordLen * cxSize)
 		nOfLines += NumOfBreaks(buffer, width);
@@ -70,9 +72,10 @@ int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 		widthStrings[i] = (LPSTR)calloc(width + 1, sizeof(CHAR));
 		while (*buffer != '\0')
 		{
+			/*
 			while (IsSpace(*buffer) && *buffer != '\0')
 				buffer++;
-
+				*/
 			len1 = GetWordLength(buffer) * cxSize;
 			len2 = strlen(widthStrings[i]) * cxSize;
 			if (len1 + cxSize <= width - len2) // если слово влезает
@@ -94,9 +97,12 @@ int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 		}
 	}
 
-	text->numWidthLines = nOfLines;
-	text->widthStrings = widthStrings;
 
+	text->numWidthLines = nOfLines;
+	strcat(widthStrings[i - 1], "\0");
+	// widthStrings[i - 1] = (LPSTR)realloc(strlen(widthStrings[i - 1]) + 1, sizeof(CHAR));
+	text->widthStrings = widthStrings;
+	
 	return 0;
 }
 

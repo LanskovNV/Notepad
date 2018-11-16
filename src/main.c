@@ -90,10 +90,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * cxChar / 2;
 		cyChar = tm.tmHeight + tm.tmExternalLeading;
 		ReleaseDC(hwnd, hdc);
-		if (text.mode == classic)
+		//if (text.mode == classic)
 			iMaxWidth = text.maxWidth;// 40 * cxChar + 22 * cxCaps;
-		else
-			iMaxWidth = text.curWidth;// 40 * cxChar + 22 * cxCaps;
+		//else
+			// iMaxWidth = text.curWidth;// 40 * cxChar + 22 * cxCaps;
 		
 		return 0;
 	case WM_SIZE:
