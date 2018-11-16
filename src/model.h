@@ -1,7 +1,7 @@
 #ifndef MODEL_H_INCLUDED
 #define MODEL_H_INCLUDED
 
-#define FILE_NAME "преступление и наказание.txt"
+#define FILE_NAME "text1.txt"
 
 typedef enum {
 	classic,
@@ -29,7 +29,7 @@ typedef struct tagMYTEXT {
 */
 void LoadText(MYTEXT *text, char *fileName);
 void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width);
-void BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize);
+int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize);
 DWORD SelectNOfLines(MYTEXT text);
 LPSTR *SelectStrings(MYTEXT text);
 

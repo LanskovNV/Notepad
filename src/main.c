@@ -76,6 +76,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     RECT rect;
 	DWORD curLen = 0;
 	GetClientRect(hwnd, &rect);
+	int isClassic = 1;
 
 	if (text.numLines == 0)
 		LoadText(&text, FILE_NAME);
@@ -89,13 +90,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * cxChar / 2;
 		cyChar = tm.tmHeight + tm.tmExternalLeading;
 		ReleaseDC(hwnd, hdc);
-		iMaxWidth = text.maxWidth;// 40 * cxChar + 22 * cxCaps;
+		if (text.mode == classic)
+			iMaxWidth = text.maxWidth;// 40 * cxChar + 22 * cxCaps;
+		else
+			iMaxWidth = text.curWidth;// 40 * cxChar + 22 * cxCaps;
 		
 		return 0;
 	case WM_SIZE:
 		cxClient = LOWORD(lParam);
 		cyClient = HIWORD(lParam);
-		iVscrollMax = max(0, text.numLines + 2 - cyClient / cyChar);
+		if (text.mode == width)
+		{
+			GetClientRect(hwnd, &rect);
+			BuildWidthStrings(&text, rect.right, cxChar);
+			// iVscrollMax = max(0, text.numWidthLines + 2 - cyClient / cyChar);
+		}
+		//else
+		// {
+			iVscrollMax = max(0, text.numLines + 2 - cyClient / cyChar);
+		// }
 		iVscrollPos = min(iVscrollPos, iVscrollMax);
 		SetScrollRange(hwnd, SB_VERT, 0, iVscrollMax, FALSE);
 		SetScrollPos(hwnd, SB_VERT, iVscrollPos, TRUE);
@@ -103,11 +116,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		iHscrollPos = min(iHscrollPos, iHscrollMax);
 		SetScrollRange(hwnd, SB_HORZ, 0, iHscrollMax, FALSE);
 		SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);
-		if (text.mode == width)
-		{
-			GetClientRect(hwnd, &rect);
-			BuildWidthStrings(&text, rect.right, cxChar);
-		}
 		return 0;
 	case WM_KEYDOWN:
 		switch (wParam)
@@ -234,14 +242,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		case IDM_EXIT:
 			SendMessage(hwnd, WM_CLOSE, 0, 0L);
 			return 0;
-		case IDM_CLASSIC: // Note: Logic below
-			text.mode = classic;
-			CheckMode(hwnd, iSelection, hMenu, wParam);
-			return 0;
 		case IDM_WIDTH: // assumes that IDM_WHITE
 			text.mode = width;
-			BuildWidthStrings(&text, rect.right, cxChar);
-			CheckMode(hwnd, iSelection, hMenu, wParam);
+			isClassic = BuildWidthStrings(&text, rect.right, cxChar);
+		case IDM_CLASSIC: // Note: Logic below
+			if (isClassic)
+			{
+				text.mode = classic;
+				isClassic = 1;
+			}
+			CheckMenuItem(hMenu, iSelection, MF_UNCHECKED);
+			iSelection = LOWORD(wParam);
+			CheckMenuItem(hMenu, iSelection, MF_CHECKED);
+			InvalidateRect(hwnd, NULL, TRUE);
 			return 0;
 		}
 		return 0;

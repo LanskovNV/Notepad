@@ -51,7 +51,7 @@ LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 	return strings;
 }
 
-void BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
+int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 {
 	LPSTR *widthStrings;
 	LPSTR buffer = text->buffer;
@@ -96,6 +96,8 @@ void BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 
 	text->numWidthLines = nOfLines;
 	text->widthStrings = widthStrings;
+
+	return 0;
 }
 
 void LoadText(MYTEXT *text, char *fileName)
@@ -154,7 +156,7 @@ static void ClearText(MYTEXT *text)
 	for (i = 0; i < text->numWidthLines; i++)
 		free(text->widthStrings[i]);
 	free(text->strings);
-	free(text->widthStrings[i]);
+	free(text->widthStrings);
 	free(text->buffer);
 	text->numLines = 0;
 	text->strings = NULL;

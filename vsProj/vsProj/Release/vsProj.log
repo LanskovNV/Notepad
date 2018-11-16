@@ -1,0 +1,9 @@
+﻿  main.c
+  model.c
+  text.c
+  view.c
+  Создание кода
+d:\poly\notepad\src\view.c(25): warning C4715: DialogProcedure: значение возвращается не при всех путях выполнения
+  All 17 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Создание кода завершено
+  vsProj.vcxproj -> D:\POLY\Notepad\vsProj\Release\vsProj.exe
