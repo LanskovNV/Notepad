@@ -18,10 +18,10 @@
     <ClInclude Include="..\..\src\model.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\view.h">
+    <ClInclude Include="..\..\src\text.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\text.h">
+    <ClInclude Include="..\..\src\view.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
@@ -32,22 +32,16 @@
     <ClCompile Include="..\..\src\model.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\view.c">
+    <ClCompile Include="..\..\src\text.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\text.c">
+    <ClCompile Include="..\..\src\view.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="text1.txt">
-      <Filter>Файлы ресурсов</Filter>
-    </Text>
-    <Text Include="преступление и наказание.txt">
-      <Filter>Файлы ресурсов</Filter>
-    </Text>
-    <Text Include="Бушков.TXT">
-      <Filter>Файлы ресурсов</Filter>
-    </Text>
+    <Text Include="text1.txt" />
+    <Text Include="Бушков.TXT" />
+    <Text Include="преступление и наказание.txt" />
   </ItemGroup>
 </Project>

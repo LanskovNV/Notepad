@@ -1,7 +1,7 @@
 #ifndef MODEL_H_INCLUDED
 #define MODEL_H_INCLUDED
 
-#define FILE_NAME "text1.txt"
+#define FILE_NAME "text1.TXT"
 
 typedef enum {
 	classic,
