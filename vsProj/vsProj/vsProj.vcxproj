@@ -128,7 +128,7 @@
     <ClCompile Include="..\..\src\view.c" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="text1.txt" />
+    <Text Include="text1.txt.txt" />
     <Text Include="Бушков.TXT" />
     <Text Include="преступление и наказание.txt" />
   </ItemGroup>

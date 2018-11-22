@@ -40,8 +40,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="text1.txt" />
     <Text Include="Бушков.TXT" />
     <Text Include="преступление и наказание.txt" />
+    <Text Include="text1.txt.txt">
+      <Filter>Файлы ресурсов</Filter>
+    </Text>
   </ItemGroup>
 </Project>
