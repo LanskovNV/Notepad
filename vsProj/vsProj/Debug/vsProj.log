@@ -1,1 +1,7 @@
-﻿  vsProj.vcxproj -> D:\POLY\Notepad\vsProj\Debug\vsProj.exe
+﻿  main.c
+  model.c
+  text.c
+  view.c
+  Generating Code...
+d:\politech\notepad\src\view.c(25): warning C4715: 'DialogProcedure': not all control paths return a value
+  vsProj.vcxproj -> D:\POLITECH\Notepad\vsProj\Debug\vsProj.exe

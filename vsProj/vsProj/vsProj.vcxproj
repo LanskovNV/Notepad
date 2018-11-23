@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{0CF0808B-E2FC-4F7D-A028-E25E21DCE6A2}</ProjectGuid>
+    <ProjectGuid>{5CB75D1B-A216-4385-9AD1-F79F21D8EDF2}</ProjectGuid>
     <RootNamespace>vsProj</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -117,18 +117,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\model.h" />
-    <ClInclude Include="..\..\src\text.h" />
-    <ClInclude Include="..\..\src\view.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\src\main.c" />
     <ClCompile Include="..\..\src\model.c" />
     <ClCompile Include="..\..\src\text.c" />
     <ClCompile Include="..\..\src\view.c" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="text1.txt.txt" />
+    <ClInclude Include="..\..\src\model.h" />
+    <ClInclude Include="..\..\src\text.h" />
+    <ClInclude Include="..\..\src\view.h" />
+  </ItemGroup>
+  <ItemGroup>
     <Text Include="Бушков.TXT" />
     <Text Include="преступление и наказание.txt" />
   </ItemGroup>
