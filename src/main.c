@@ -75,7 +75,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	static MYTEXT text;
 	LPSTR *curStrings = NULL;
     RECT rect;
-	DWORD curLen = 0;
+	DWORD curLen = 0, curNumLines = 0;
 	GetClientRect(hwnd, &rect);
 	int isClassic = 1;
 
@@ -91,10 +91,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * cxChar / 2;
 		cyChar = tm.tmHeight + tm.tmExternalLeading;
 		ReleaseDC(hwnd, hdc);
-		//if (text.mode == classic)
-			iMaxWidth = text.maxWidth;// 40 * cxChar + 22 * cxCaps;
-		//else
-			// iMaxWidth = text.curWidth;// 40 * cxChar + 22 * cxCaps;
+		if (text.mode == classic)
+			iMaxWidth = text.maxWidth;
+		else
+			iMaxWidth = text.curWidth;
 		
 		return 0;
 	case WM_SIZE:
@@ -104,12 +104,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		{
 			GetClientRect(hwnd, &rect);
 			BuildWidthStrings(&text, rect.right, cxChar);
-			// iVscrollMax = max(0, text.numWidthLines + 2 - cyClient / cyChar);
+			curNumLines = text.numWidthLines;
 		}
-		//else
-		// {
-			iVscrollMax = max(0, text.numLines + 2 - cyClient / cyChar);
-		// }
+		else
+		{
+			curNumLines = text.numLines;
+		}
+		iVscrollMax = max(0, curNumLines + 2 - cyClient / cyChar);
 		iVscrollPos = min(iVscrollPos, iVscrollMax);
 		SetScrollRange(hwnd, SB_VERT, 0, iVscrollMax, FALSE);
 		SetScrollPos(hwnd, SB_VERT, iVscrollPos, TRUE);
@@ -245,7 +246,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		case IDM_WIDTH: // assumes that IDM_WHITE
 			text.mode = width;
-			isClassic = BuildWidthStrings(&text, rect.right, cxChar);
+			isClassic = BuildWidthStrings(&text, cxClient, cxChar);
 		case IDM_CLASSIC: // Note: Logic below
 			if (isClassic)
 			{
@@ -256,6 +257,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			iSelection = LOWORD(wParam);
 			CheckMenuItem(hMenu, iSelection, MF_CHECKED);
 			InvalidateRect(hwnd, NULL, TRUE);
+			SendMessage(hwnd, WM_SIZE, 0, 0L);
 			return 0;
 		}
 		return 0;

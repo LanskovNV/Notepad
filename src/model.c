@@ -59,7 +59,7 @@ int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 	int nOfLines;
 	
     width -= cxSize * 10;
-	nOfLines = text->bufLen * cxSize / width + 1;
+	nOfLines =  text->bufLen * cxSize / width + 1;
 	text->curWidth = width;
 	if (width < text->maxWordLen * cxSize)
 		nOfLines += NumOfBreaks(buffer, width);
