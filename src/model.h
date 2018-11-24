@@ -32,5 +32,6 @@ void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width);
 int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize);
 DWORD SelectNOfLines(MYTEXT text);
 LPSTR *SelectStrings(MYTEXT text);
+void ClearWideText(MYTEXT *text);
 
 #endif // MODEL_H_INCLUDED

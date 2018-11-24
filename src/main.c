@@ -65,7 +65,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	static int cxChar, cxCaps, cyChar, cxClient, cyClient, iMaxWidth,
-		iVscrollPos, iVscrollMax, iHscrollPos, iHscrollMax;
+		iVscrollPos, iVscrollMax, iHscrollPos, iHscrollMax, tmp;
 	HDC hdc;
 	HMENU hMenu;
 	int i, x, y, iPaintBeg, iPaintEnd, iVscrollInc, iHscrollInc;
@@ -110,11 +110,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		{
 			curNumLines = text.numLines;
 		}
-		iVscrollMax = max(0, curNumLines + 2 - cyClient / cyChar);
+		tmp = curNumLines + 2 - cyClient / cyChar;
+		iVscrollMax = max(tmp, 0);
 		iVscrollPos = min(iVscrollPos, iVscrollMax);
 		SetScrollRange(hwnd, SB_VERT, 0, iVscrollMax, FALSE);
 		SetScrollPos(hwnd, SB_VERT, iVscrollPos, TRUE);
-		iHscrollMax = max(0, 2 + (iMaxWidth - cxClient) / cxChar);
+
+		tmp = 2 + (iMaxWidth - cxClient) / cxChar;
+		iHscrollMax = max(0, tmp);
 		iHscrollPos = min(iHscrollPos, iHscrollMax);
 		SetScrollRange(hwnd, SB_HORZ, 0, iHscrollMax, FALSE);
 		SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);

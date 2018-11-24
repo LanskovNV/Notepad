@@ -3,6 +3,8 @@
 #include "model.h"
 #include "text.h"
 
+#define DELTA 1
+
 LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 {
 	int i, j, prewLineEnd = 0;
@@ -51,31 +53,42 @@ LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 	return strings;
 }
 
+
+void ClearWideText(MYTEXT *text)
+{
+	int i;
+
+	if (text->numWidthLines != 0)
+	{
+		for (i = 0; i < text->numWidthLines; i++)
+			free(text->widthStrings[i]);
+		free(text->widthStrings);
+	}
+	text->numWidthLines = 0;
+}
+
 int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 {
 	LPSTR *widthStrings;
 	LPSTR buffer = text->buffer;
 	int i;
 	int nOfLines;
-	
+
+	if (text->curWidth != 0 && text->curWidth != width)
+	  ClearWideText(&text);
+
     width -= cxSize * 10;
 	nOfLines =  text->bufLen * cxSize / width + 1;
 	text->curWidth = width;
-	if (width < text->maxWordLen * cxSize)
-		nOfLines += NumOfBreaks(buffer, width);
-
 	widthStrings = (LPSTR*)calloc(nOfLines, sizeof(CHAR*));
-	for (i = 0; i < nOfLines; i++)
+
+	for (i = 0; i < nOfLines && *buffer != '\0'; i++)
 	{
 		DWORD len1, len2;
 
 		widthStrings[i] = (LPSTR)calloc(width + 1, sizeof(CHAR));
 		while (*buffer != '\0')
 		{
-			/*
-			while (IsSpace(*buffer) && *buffer != '\0')
-				buffer++;
-				*/
 			len1 = GetWordLength(buffer) * cxSize;
 			len2 = strlen(widthStrings[i]) * cxSize;
 			if (len1 + cxSize <= width - len2) // если слово влезает
@@ -95,12 +108,14 @@ int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 				break;
 			}
 		}
+		if (i == nOfLines - 1 && *buffer != '\0')
+		{
+			nOfLines++;
+		}
 	}
 
-
-	text->numWidthLines = nOfLines;
+	text->numWidthLines = i;
 	strcat(widthStrings[i - 1], "\0");
-	// widthStrings[i - 1] = (LPSTR)realloc(strlen(widthStrings[i - 1]) + 1, sizeof(CHAR));
 	text->widthStrings = widthStrings;
 	
 	return 0;
@@ -159,10 +174,8 @@ static void ClearText(MYTEXT *text)
 
 	for (i = 0; i < text->numLines; i++)
 		free(text->strings[i]);
-	for (i = 0; i < text->numWidthLines; i++)
-		free(text->widthStrings[i]);
-	free(text->strings);
-	free(text->widthStrings);
+	ClearWideText(text);
+	free(text->strings);	
 	free(text->buffer);
 	text->numLines = 0;
 	text->strings = NULL;
