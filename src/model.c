@@ -60,7 +60,7 @@ void ClearWideText(MYTEXT *text)
 
 	if (text->numWidthLines != 0)
 	{
-		for (i = 0; i < text->numWidthLines; i++)
+		for (i = 0; i < (int)text->numWidthLines; i++)
 			free(text->widthStrings[i]);
 		free(text->widthStrings);
 	}
@@ -74,13 +74,12 @@ int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 	int i;
 	int nOfLines;
 
+	width -= cxSize * 10;
 	if (text->curWidth != 0 && text->curWidth != width)
-	  ClearWideText(&text);
-
-    width -= cxSize * 10;
+		ClearWideText(text);
 	nOfLines =  text->bufLen * cxSize / width + 1;
 	text->curWidth = width;
-	widthStrings = (LPSTR*)calloc(nOfLines, sizeof(CHAR*));
+	widthStrings = (LPSTR*)malloc(sizeof(CHAR*));
 
 	for (i = 0; i < nOfLines && *buffer != '\0'; i++)
 	{
