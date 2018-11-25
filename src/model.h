@@ -1,7 +1,7 @@
 #ifndef MODEL_H_INCLUDED
 #define MODEL_H_INCLUDED
 
-#define FILE_NAME "преступление и наказание.txt"
+#define FILE_NAME "text.txt"
 
 typedef enum {
 	classic,
@@ -32,6 +32,5 @@ void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width);
 int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize);
 DWORD SelectNOfLines(MYTEXT text);
 LPSTR *SelectStrings(MYTEXT text);
-void ClearWideText(MYTEXT *text);
 
 #endif // MODEL_H_INCLUDED

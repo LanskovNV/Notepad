@@ -90,14 +90,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		cxChar = tm.tmAveCharWidth;
 		cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * cxChar / 2;
 		cyChar = tm.tmHeight + tm.tmExternalLeading;
-		ReleaseDC(hwnd, hdc);
+		ReleaseDC(hwnd, hdc);		
+		return 0;
+	case WM_SIZE:
+
 		if (text.mode == classic)
 			iMaxWidth = text.maxWidth;
 		else
-			iMaxWidth = text.curWidth;
-		
-		return 0;
-	case WM_SIZE:
+			iMaxWidth = cxClient;
+
 		cxClient = LOWORD(lParam);
 		cyClient = HIWORD(lParam);
 		if (text.mode == width)
@@ -116,11 +117,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		SetScrollRange(hwnd, SB_VERT, 0, iVscrollMax, FALSE);
 		SetScrollPos(hwnd, SB_VERT, iVscrollPos, TRUE);
 
-		tmp = 2 + (iMaxWidth - cxClient) / cxChar;
-		iHscrollMax = max(0, tmp);
-		iHscrollPos = min(iHscrollPos, iHscrollMax);
-		SetScrollRange(hwnd, SB_HORZ, 0, iHscrollMax, FALSE);
-		SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);
+		if (text.mode != width)
+		{
+			tmp = 2 + (iMaxWidth - cxClient) / cxChar;
+			iHscrollMax = max(0, tmp);
+			iHscrollPos = min(iHscrollPos, iHscrollMax);
+			SetScrollRange(hwnd, SB_HORZ, 0, iHscrollMax, FALSE);
+			SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);
+		}
 		return 0;
 	case WM_KEYDOWN:
 		switch (wParam)
@@ -185,35 +189,38 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	case WM_HSCROLL:
-		switch (LOWORD(wParam))
+		if (text.mode != width)
 		{
-		case SB_LINEUP:
-			iHscrollInc = -1;
-			break;
-		case SB_LINEDOWN:
-			iHscrollInc = 1;
-			break;
-		case SB_PAGEUP:
-			iHscrollInc = -8;
-			break;
-		case SB_PAGEDOWN:
-			iHscrollInc = 8;
-			break;
-		case SB_THUMBPOSITION:
-			iHscrollInc = HIWORD(wParam) - iHscrollPos;
-			break;
-		default:
-			iHscrollInc = 0;
-		}
-		iHscrollInc = max(
-			-iHscrollPos,
-			min(iHscrollInc, iHscrollMax - iHscrollPos)
-		);
-		if (iHscrollInc != 0)
-		{
-			iHscrollPos += iHscrollInc;
-			ScrollWindow(hwnd, -cxChar * iHscrollInc, 0, NULL, NULL);
-			SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);
+			switch (LOWORD(wParam))
+			{
+			case SB_LINEUP:
+				iHscrollInc = -1;
+				break;
+			case SB_LINEDOWN:
+				iHscrollInc = 1;
+				break;
+			case SB_PAGEUP:
+				iHscrollInc = -8;
+				break;
+			case SB_PAGEDOWN:
+				iHscrollInc = 8;
+				break;
+			case SB_THUMBPOSITION:
+				iHscrollInc = HIWORD(wParam) - iHscrollPos;
+				break;
+			default:
+				iHscrollInc = 0;
+			}
+			iHscrollInc = max(
+				-iHscrollPos,
+				min(iHscrollInc, iHscrollMax - iHscrollPos)
+			);
+			if (iHscrollInc != 0)
+			{
+				iHscrollPos += iHscrollInc;
+				ScrollWindow(hwnd, -cxChar * iHscrollInc, 0, NULL, NULL);
+				SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);
+			}
 		}
 		return 0;
 	case WM_PAINT:

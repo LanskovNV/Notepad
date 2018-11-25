@@ -1,6 +1,14 @@
 #include <windows.h>
 #include "text.h"
 
+void ClearString(char *s, int len)
+{
+	int i;
+
+	for (i = 0; i < len; i++)
+		*s = 0, s++;
+}
+
 BOOL IsSpace(char c)
 {
 	if (c == '\0' || c == '\r' || c == '\t' || c == '\n' || c == ' ')

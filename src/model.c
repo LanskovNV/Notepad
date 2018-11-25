@@ -53,8 +53,7 @@ LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 	return strings;
 }
 
-
-void ClearWideText(MYTEXT *text)
+static void ClearWidthStrings(MYTEXT *text)
 {
 	int i;
 
@@ -69,54 +68,58 @@ void ClearWideText(MYTEXT *text)
 
 int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
 {
-	LPSTR *widthStrings;
 	LPSTR buffer = text->buffer;
+	LPSTR newBuffer = (LPSTR)malloc((text->bufLen + 1)* sizeof(CHAR));
 	int i;
-	int nOfLines;
 
-	width -= cxSize * 10;
-	if (text->curWidth != 0 && text->curWidth != width)
-		ClearWideText(text);
-	nOfLines =  text->bufLen * cxSize / width + 1;
-	text->curWidth = width;
-	widthStrings = (LPSTR*)malloc(sizeof(CHAR*));
-
-	for (i = 0; i < nOfLines && *buffer != '\0'; i++)
+	ClearString(newBuffer, text->bufLen + 1);
+	ClearWidthStrings(text);
+	width -= 10 * cxSize;
+	for (i = 0; *buffer != '\0'; i++)
 	{
 		DWORD len1, len2;
+		LPSTR widthString = (LPSTR)malloc((width + 1) * sizeof(CHAR));
 
-		widthStrings[i] = (LPSTR)calloc(width + 1, sizeof(CHAR));
+		ClearString(widthString, width + 1);
 		while (*buffer != '\0')
 		{
+			while (IsSpace(*buffer)) // skip spaces
+				buffer++;
+
 			len1 = GetWordLength(buffer) * cxSize;
-			len2 = strlen(widthStrings[i]) * cxSize;
+			len2 = strlen(widthString) * cxSize;
 			if (len1 + cxSize <= width - len2) // если слово влезает
 			{
 				int length = len1 == width - len2 / cxSize ? len1 / cxSize : len1 / cxSize + 1;
-				strncat(widthStrings[i], buffer, length);                                   // прибавь его к строке
-				buffer += length;
+				
+				strncat(widthString, buffer, length - 1);                                   // прибавь его к строке
+				strncat(widthString, " ", 1);
+				if ((int)strlen(buffer) < length)
+					buffer += strlen(buffer);
+				else
+				    buffer += length;
 			}
 			else if (len1 > width && len2 == 0)                                             // если не влезает в пустую строку
 			{
-				strncat(widthStrings[i], buffer, width);                                    // копируем сколько влезает 
+				strncat(widthString, buffer, width);                                    // копируем сколько влезает 
 				buffer += width;
+				strncat(widthString, "\n", 1);                                    // копируем сколько влезает 
 				break;
 			}
 			else
 			{
+				strncat(widthString, "\n", 1);
 				break;
 			}
 		}
-		if (i == nOfLines - 1 && *buffer != '\0')
-		{
-			nOfLines++;
-		}
+		strcat(newBuffer, widthString);
+		free(widthString);
 	}
+	// realloc(newBuffer, strlen(newBuffer) + 1);
+	text->numWidthLines = GetNumLines(newBuffer);
+	text->widthStrings = BuildStrings(newBuffer, text->numWidthLines, &text->curWidth);
 
-	text->numWidthLines = i;
-	strcat(widthStrings[i - 1], "\0");
-	text->widthStrings = widthStrings;
-	
+	free(newBuffer);
 	return 0;
 }
 
@@ -173,7 +176,14 @@ static void ClearText(MYTEXT *text)
 
 	for (i = 0; i < text->numLines; i++)
 		free(text->strings[i]);
-	ClearWideText(text);
+	if (text->numWidthLines != 0)
+	{
+		for (i = 0; i < text->numWidthLines; i++)
+			free(text->widthStrings[i]);
+		free(text->widthStrings);
+	}
+	text->numWidthLines = 0;
+	text->curWidth = 0;
 	free(text->strings);	
 	free(text->buffer);
 	text->numLines = 0;
