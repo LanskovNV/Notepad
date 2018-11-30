@@ -65,7 +65,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	static int cxChar, cxCaps, cyChar, cxClient, cyClient, iMaxWidth,
-		iVscrollPos, iVscrollMax, iHscrollPos, iHscrollMax, tmp;
+		iVscrollPos, iVscrollMax, iHscrollPos, iHscrollMax;
 	HDC hdc;
 	HMENU hMenu;
 	int i, x, y, iPaintBeg, iPaintEnd, iVscrollInc, iHscrollInc;
@@ -95,38 +95,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		ReleaseDC(hwnd, hdc);		
 		return 0;
 	case WM_SIZE:
-
-		if (text.mode == classic)
-			iMaxWidth = text.maxWidth;
-		else
-			iMaxWidth = cxClient;
-
-		cxClient = LOWORD(lParam);
-		cyClient = HIWORD(lParam);
-		if (text.mode == width)
-		{
-			GetClientRect(hwnd, &rect);
-			BuildWidthStrings(&text, rect.right / cxChar + 1);
-			curNumLines = text.numWidthLines;
-		}
-		else
-		{
-			curNumLines = text.numLines;
-		}
-		tmp = curNumLines + 2 - cyClient / cyChar;
-		iVscrollMax = max(tmp, 0);
-		iVscrollPos = min(iVscrollPos, iVscrollMax);
-		SetScrollRange(hwnd, SB_VERT, 0, iVscrollMax, FALSE);
-		SetScrollPos(hwnd, SB_VERT, iVscrollPos, TRUE);
-
-		if (text.mode != width)
-		{
-			tmp = 2 + (iMaxWidth - cxClient) / cxChar;
-			iHscrollMax = max(0, tmp);
-			iHscrollPos = min(iHscrollPos, iHscrollMax);
-			SetScrollRange(hwnd, SB_HORZ, 0, iHscrollMax, FALSE);
-			SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);
-		}
+		ResizeMsg(hwnd, lParam, rect, &text, &iMaxWidth, &cxClient, &cyClient, &curNumLines, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar);
 		return 0;
 	case WM_KEYDOWN:
 		switch (wParam)
@@ -258,7 +227,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		case IDM_WIDTH: // assumes that IDM_WHITE
 			text.mode = width;
-			isClassic = BuildWidthStrings(&text, rect.right / cxChar + 1);
+			isClassic = ResizeMsg(hwnd, lParam, rect, &text, &iMaxWidth, &cxClient, &cyClient, &curNumLines, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar);
 		case IDM_CLASSIC: // Note: Logic below
 			if (isClassic)
 			{
@@ -269,7 +238,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			iSelection = LOWORD(wParam);
 			CheckMenuItem(hMenu, iSelection, MF_CHECKED);
 			InvalidateRect(hwnd, NULL, TRUE);
-			SendMessage(hwnd, WM_SIZE, 0, 0L);
 			return 0;
 		}
 		return 0;

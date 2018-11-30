@@ -22,6 +22,7 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 	default:
 		return DefWindowProcW(hwnd, msg, wp, lp);
 	}
+	return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
 void RegisterDialogClass(HINSTANCE hInst)
@@ -51,4 +52,42 @@ void CheckMode(HWND hwnd, int iSelection, HMENU hMenu, WPARAM wParam)
 	iSelection = LOWORD(wParam);
 	CheckMenuItem(hMenu, iSelection, MF_CHECKED);
 	InvalidateRect(hwnd, NULL, TRUE);
+}
+
+int ResizeMsg(HWND hwnd, LPARAM lParam, RECT rect, MYTEXT *text, int *iMaxWidth, int *cxClient, int *cyClient, int *curNumLines, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int cxChar, int cyChar)
+{
+	int tmp = 0;
+
+	if (text->mode == classic)
+		*iMaxWidth = text->maxWidth;
+	else
+		*iMaxWidth = *cxClient;
+
+	*cxClient = LOWORD(lParam);
+	*cyClient = HIWORD(lParam);
+	if (text->mode == width && (int)text->maxWidth != rect.right / cxChar)
+	{
+		GetClientRect(hwnd, &rect);
+		BuildWidthStrings(text, rect.right / cxChar);
+		*curNumLines = text->numWidthLines;
+	}
+	else
+	{
+		*curNumLines = text->numLines;
+	}
+	tmp = *curNumLines + 2 - *cyClient / cyChar;
+	*iVscrollMax = max(tmp, 0);
+	*iVscrollPos = min(*iVscrollPos, *iVscrollMax);
+	SetScrollRange(hwnd, SB_VERT, 0, *iVscrollMax, FALSE);
+	SetScrollPos(hwnd, SB_VERT, *iVscrollPos, TRUE);
+
+	if (text->mode != width)
+	{
+		tmp = 2 + (*iMaxWidth - *cxClient) / cxChar;
+		*iHscrollMax = max(0, tmp);
+		*iHscrollPos = min(*iHscrollPos, *iHscrollMax);
+		SetScrollRange(hwnd, SB_HORZ, 0, *iHscrollMax, FALSE);
+		SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
+	}
+	return 0;
 }

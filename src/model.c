@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "model.h"
 #include "text.h"
+#include "header.h"
 
 LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 {
@@ -14,7 +15,9 @@ LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 	{
 		if (buffer[i] == '\n')
 		{
-			if (cnt > maxW)
+			int tmp = 0;
+
+ 			if (cnt > maxW)
 			{
 				maxW = cnt;
 				cnt = 0;
@@ -28,7 +31,10 @@ LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 			else
 				curStrLen = i - prewLineEnd - 2;
 
-			strings[j] = (CHAR*)calloc(curStrLen + 1, sizeof(CHAR));
+			tmp = curStrLen + 1;
+			strings[j] = (CHAR*)calloc(tmp <= 1 ? 2 : tmp, sizeof(CHAR));
+			if (curStrLen <= 0)
+				curStrLen = 1;
 			strncpy(strings[j], buffer + prewLineEnd + 1, curStrLen);
 			strings[j][curStrLen] = '\0';
 			prewLineEnd = i;
@@ -71,7 +77,6 @@ int BuildWidthStrings(MYTEXT *text, DWORD width)
 	LPSTR buffer = text->buffer;
 	LPSTR newBuffer = (LPSTR)malloc(newBufLen * sizeof(CHAR));
 
-	width -= 1;
 	ClearString(newBuffer, newBufLen);
 	ClearWidthStrings(text);
 	for (i = 0; *buffer != '\0'; i++)
@@ -82,8 +87,11 @@ int BuildWidthStrings(MYTEXT *text, DWORD width)
 		ClearString(widthString, tmpLen);
 		while (*buffer != '\0')
 		{
-			while (IsSpace(*buffer)) // skip spaces
+			while (IsSpace(*buffer) && strlen(widthString) < tmpLen + 1)
+			{
+				strncat(widthString, buffer, 1);
 				buffer++;
+			}
 
 			len1 = GetWordLength(buffer);
 			len2 = strlen(widthString);
@@ -120,7 +128,8 @@ int BuildWidthStrings(MYTEXT *text, DWORD width)
 	}
 	text->numWidthLines = GetNumLines(newBuffer);
 	realloc(newBuffer, strlen(newBuffer) + 1);
-	text->widthStrings = BuildStrings(newBuffer, text->numWidthLines, &text->curWidth);
+	text->widthStrings = BuildStrings(newBuffer, text->numWidthLines, &text->curWidth); // ?!?!
+	text->curWidth = width;
 
 	free(newBuffer);
 	return 0;
@@ -225,4 +234,3 @@ DWORD SelectNOfLines(MYTEXT text)
 {
 	return text.mode == classic ? text.numLines : text.numWidthLines;
 }
-

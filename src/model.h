@@ -24,6 +24,7 @@ typedef struct tagMYTEXT {
 	LPSTR buffer; // all text
 } MYTEXT;
 
+
 /**
  * functions to work with text
 */
