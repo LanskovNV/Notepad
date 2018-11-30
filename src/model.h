@@ -29,7 +29,7 @@ typedef struct tagMYTEXT {
 */
 void LoadText(MYTEXT *text, char *fileName);
 void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width);
-int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize);
+int BuildWidthStrings(MYTEXT *text, DWORD width);
 DWORD SelectNOfLines(MYTEXT text);
 LPSTR *SelectStrings(MYTEXT text);
 

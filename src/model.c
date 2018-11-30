@@ -1,9 +1,8 @@
 #include <windows.h>
 #include <string.h>
+#include <stdio.h>
 #include "model.h"
 #include "text.h"
-
-#define DELTA 1
 
 LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 {
@@ -66,57 +65,61 @@ static void ClearWidthStrings(MYTEXT *text)
 	text->numWidthLines = 0;
 }
 
-int BuildWidthStrings(MYTEXT *text, DWORD width, int cxSize)
+int BuildWidthStrings(MYTEXT *text, DWORD width)
 {
+	int i, newBufLen = (text->bufLen + 1) * 2;
 	LPSTR buffer = text->buffer;
-	LPSTR newBuffer = (LPSTR)malloc((text->bufLen + 1)* sizeof(CHAR));
-	int i;
+	LPSTR newBuffer = (LPSTR)malloc(newBufLen * sizeof(CHAR));
 
-	ClearString(newBuffer, text->bufLen + 1);
+	width -= 1;
+	ClearString(newBuffer, newBufLen);
 	ClearWidthStrings(text);
-	width -= 10 * cxSize;
 	for (i = 0; *buffer != '\0'; i++)
 	{
-		DWORD len1, len2;
-		LPSTR widthString = (LPSTR)malloc((width + 1) * sizeof(CHAR));
+		DWORD len1, len2, tmpLen = width;
+		LPSTR widthString = (LPSTR)malloc((tmpLen + 1) * sizeof(CHAR));
 
-		ClearString(widthString, width + 1);
+		ClearString(widthString, tmpLen);
 		while (*buffer != '\0')
 		{
 			while (IsSpace(*buffer)) // skip spaces
 				buffer++;
 
-			len1 = GetWordLength(buffer) * cxSize;
-			len2 = strlen(widthString) * cxSize;
-			if (len1 + cxSize <= width - len2) // если слово влезает
+			len1 = GetWordLength(buffer);
+			len2 = strlen(widthString);
+			if (len1 + 1 < width - len2) 
 			{
-				int length = len1 == width - len2 / cxSize ? len1 / cxSize : len1 / cxSize + 1;
+				int length = len1 == width - len2 ? len1 : len1 + 1;
 				
-				strncat(widthString, buffer, length - 1);                                   // прибавь его к строке
+				strncat(widthString, buffer, length - 1);                                  
 				strncat(widthString, " ", 1);
 				if ((int)strlen(buffer) < length)
 					buffer += strlen(buffer);
 				else
 				    buffer += length;
 			}
-			else if (len1 > width && len2 == 0)                                             // если не влезает в пустую строку
+			else if (len1 + 1 >= width && len2 == 0)                                             
 			{
-				strncat(widthString, buffer, width);                                    // копируем сколько влезает 
-				buffer += width;
-				strncat(widthString, "\n", 1);                                    // копируем сколько влезает 
+				int l = width - 1;
+				strncat(widthString, buffer, l);                                    
+				buffer += l;
+				strncat(widthString, "\n", 1);                                    
 				break;
 			}
 			else
 			{
-				strncat(widthString, "\n", 1);
+				if (strlen(widthString) < tmpLen)
+					strncat(widthString, "\n", 1);
+				else
+					printf("error\n");
 				break;
 			}
 		}
-		strcat(newBuffer, widthString);
+		strncat(newBuffer, widthString, (strlen(widthString)));
 		free(widthString);
 	}
-	// realloc(newBuffer, strlen(newBuffer) + 1);
 	text->numWidthLines = GetNumLines(newBuffer);
+	realloc(newBuffer, strlen(newBuffer) + 1);
 	text->widthStrings = BuildStrings(newBuffer, text->numWidthLines, &text->curWidth);
 
 	free(newBuffer);

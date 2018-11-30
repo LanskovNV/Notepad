@@ -70,6 +70,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	HMENU hMenu;
 	int i, x, y, iPaintBeg, iPaintEnd, iVscrollInc, iHscrollInc;
 	PAINTSTRUCT ps;
+	HFONT hfnt;
 	TEXTMETRIC tm;
 	static int iSelection = IDM_CLASSIC;
 	static MYTEXT text;
@@ -85,10 +86,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	switch (iMsg)
 	{
 	case WM_CREATE:
+		hfnt = GetStockObject(SYSTEM_FIXED_FONT);
 		hdc = GetDC(hwnd);
+		SelectObject(hdc, hfnt);
 		GetTextMetrics(hdc, &tm);
-		cxChar = tm.tmAveCharWidth;
-		cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * cxChar / 2;
+		cxChar = tm.tmMaxCharWidth;
 		cyChar = tm.tmHeight + tm.tmExternalLeading;
 		ReleaseDC(hwnd, hdc);		
 		return 0;
@@ -104,7 +106,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		if (text.mode == width)
 		{
 			GetClientRect(hwnd, &rect);
-			BuildWidthStrings(&text, rect.right, cxChar);
+			BuildWidthStrings(&text, rect.right / cxChar + 1);
 			curNumLines = text.numWidthLines;
 		}
 		else
@@ -256,7 +258,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		case IDM_WIDTH: // assumes that IDM_WHITE
 			text.mode = width;
-			isClassic = BuildWidthStrings(&text, cxClient, cxChar);
+			isClassic = BuildWidthStrings(&text, rect.right / cxChar + 1);
 		case IDM_CLASSIC: // Note: Logic below
 			if (isClassic)
 			{
