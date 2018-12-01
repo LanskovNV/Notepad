@@ -24,13 +24,12 @@ typedef struct tagMYTEXT {
 	LPSTR buffer; // all text
 } MYTEXT;
 
-
 /**
  * functions to work with text
 */
 void LoadText(MYTEXT *text, char *fileName);
 void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width);
-int BuildWidthStrings(MYTEXT *text, DWORD width);
+int BuildWidthStrings(MYTEXT *text, int width);
 DWORD SelectNOfLines(MYTEXT text);
 LPSTR *SelectStrings(MYTEXT text);
 

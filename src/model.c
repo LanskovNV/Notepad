@@ -49,6 +49,36 @@ static void ClearWidthStrings(MYTEXT *text)
 	text->numWidthLines = 0;
 }
 
+int BuildWidthStrings(MYTEXT *text, int width)
+{
+	LPSTR buffer = text->buffer;
+	LPSTR *strings = (LPSTR*)calloc(text->bufLen,sizeof(LPSTR*)); /* строк не больше чем символов 100% */
+	int i;
+
+	ClearWidthStrings(text);
+	for (i = 0; *buffer != '\0'; i++)
+	{
+		int newWidth = width;
+
+		/* переместись назад до пробела */
+		if ((int)strlen(buffer) > newWidth)
+			while (!IsSpace(*(buffer + newWidth)) && newWidth != 0)
+				newWidth--;
+		if (newWidth == 0)
+			newWidth = width;
+		/* скопируй строку */
+		strings[i] = (LPSTR)calloc(newWidth + 1, sizeof(CHAR));
+		strncpy(strings[i], buffer, newWidth);
+		buffer += newWidth;
+	}
+	realloc(strings, i * sizeof(LPSTR*));
+	text->numWidthLines = i;
+	text->curWidth = width;
+	text->widthStrings = strings;
+
+	return 0;
+}
+/*
 int BuildWidthStrings(MYTEXT *text, DWORD width)
 {
 	int i, newBufLen = (text->bufLen + 1) * 2;
@@ -130,6 +160,7 @@ int BuildWidthStrings(MYTEXT *text, DWORD width)
 	free(newBuffer);
 	return 0;
 }
+*/
 
 void LoadText(MYTEXT *text, char *fileName)
 {
