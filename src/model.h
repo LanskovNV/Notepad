@@ -20,9 +20,9 @@ typedef struct tagMYTEXT {
 	DWORD maxWidth;
 	DWORD maxWordLen;
 	DWORD bufLen;
-	LPSTR *strings; // all text separated by origin strings
-	LPSTR *widthStrings; // 
-	LPSTR buffer; // all text
+	LPSTR *strings; 
+	LPSTR *widthStrings; 
+	LPSTR buffer; 
 } MYTEXT;
 
 /**

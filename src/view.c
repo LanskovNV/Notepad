@@ -46,18 +46,19 @@ void DisplayDialog(HWND hwnd)
 	CreateWindowW(L"Button", L"yes", WS_VISIBLE | WS_CHILD, 20, 20, 100, 40, hDlg, (HMENU)2, NULL, NULL);
 }
 
-void CheckMode(HWND hwnd, int iSelection, HMENU hMenu, WPARAM wParam)
+void CheckMode(HWND hwnd, int *iSelection, HMENU hMenu, WPARAM wParam)
 {
-	CheckMenuItem(hMenu, iSelection, MF_UNCHECKED);
-	iSelection = LOWORD(wParam);
-	CheckMenuItem(hMenu, iSelection, MF_CHECKED);
+	CheckMenuItem(hMenu, *iSelection, MF_UNCHECKED);
+	*iSelection = LOWORD(wParam);
+	CheckMenuItem(hMenu, *iSelection, MF_CHECKED);
 	InvalidateRect(hwnd, NULL, TRUE);
 }
 
-int ResizeMsg(HWND hwnd, LPARAM lParam, RECT rect, MYTEXT *text, int *iMaxWidth, int *cxClient, int *cyClient, int *curNumLines, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int cxChar, int cyChar)
+int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int cxChar, int cyChar)
 {
 	int tmp = 0;
-	int nwidth;
+	int nwidth, curNumLines;
+	RECT rect;
 
 	if (text->mode == classic)
 		*iMaxWidth = text->maxWidth;
@@ -72,11 +73,11 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, RECT rect, MYTEXT *text, int *iMaxWidth,
 	if (text->mode == width && (text->widthStrings == NULL || text->curWidth != nwidth))
 	{
 		BuildWidthStrings(text, nwidth);
-		*curNumLines = text->numWidthLines;
+		curNumLines = text->numWidthLines;
 	}
 	else
-		*curNumLines = text->numLines;
-	tmp = *curNumLines + 2 - *cyClient / cyChar;
+		curNumLines = text->numLines;
+	tmp = curNumLines + 2 - *cyClient / cyChar;
 	*iVscrollMax = max(tmp, 0);
 	*iVscrollPos = min(*iVscrollPos, *iVscrollMax);
 	SetScrollRange(hwnd, SB_VERT, 0, *iVscrollMax, FALSE);
@@ -89,6 +90,188 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, RECT rect, MYTEXT *text, int *iMaxWidth,
 		*iHscrollPos = min(*iHscrollPos, *iHscrollMax);
 		SetScrollRange(hwnd, SB_HORZ, 0, *iHscrollMax, FALSE);
 		SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
+	}
+	return 0;
+}
+
+int CreateMsg(HWND hwnd, int *cxChar, int *cyChar)
+{
+	HFONT hfnt;
+	TEXTMETRIC tm;
+	HDC hdc;
+
+	hfnt = GetStockObject(SYSTEM_FIXED_FONT);
+	hdc = GetDC(hwnd);
+	SelectObject(hdc, hfnt);
+	GetTextMetrics(hdc, &tm);
+	* cxChar = tm.tmMaxCharWidth;
+	* cyChar = tm.tmHeight + tm.tmExternalLeading;
+	ReleaseDC(hwnd, hdc);
+	return 0;
+}
+
+int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxChar, int cyChar)
+{
+	PAINTSTRUCT ps;
+	LPSTR *curStrings = NULL;
+	int curLen = 0, iPaintBeg, iPaintEnd, x, y, i;
+	HDC hdc;
+
+	curStrings = SelectStrings(*text);
+	curLen = SelectNOfLines(*text);
+	hdc = BeginPaint(hwnd, &ps);
+	iPaintBeg = max(0, iVscrollPos + ps.rcPaint.top / cyChar - 1);
+	iPaintEnd = min((int)curLen, iVscrollPos + ps.rcPaint.bottom / cyChar);
+
+	for (i = iPaintBeg; i < iPaintEnd; i++)
+	{
+		x = cxChar * (1 - iHscrollPos);
+		y = cyChar * (1 - iVscrollPos + i);
+		TextOut(
+			hdc, x, y,
+			curStrings[i],
+			strlen(curStrings[i])
+		);
+		SetTextAlign(hdc, TA_LEFT | TA_TOP);
+	}
+	EndPaint(hwnd, &ps);
+	return 0;
+}
+
+int KeydownMsg(HWND hwnd, WPARAM wParam)
+{
+	switch (wParam)
+	{
+	case VK_PRIOR:
+		SendMessage(hwnd, WM_VSCROLL, SB_PAGEUP, 0L);
+		break;
+	case VK_NEXT:
+		SendMessage(hwnd, WM_VSCROLL, SB_PAGEDOWN, 0L);
+		break;
+	case VK_UP:
+		SendMessage(hwnd, WM_VSCROLL, SB_LINEUP, 0L);
+		break;
+	case VK_DOWN:
+		SendMessage(hwnd, WM_VSCROLL, SB_LINEDOWN, 0L);
+		break;
+	case VK_LEFT:
+		SendMessage(hwnd, WM_HSCROLL, SB_PAGEUP, 0L);
+		break;
+	case VK_RIGHT:
+		SendMessage(hwnd, WM_HSCROLL, SB_PAGEDOWN, 0L);
+		break;
+	}
+	return 0;
+}
+
+int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos)
+{
+	HMENU hMenu = GetMenu(hwnd);
+	int isClassic = 1;
+
+	switch (LOWORD(wParam))
+	{
+	case IDM_OPEN:
+		OpenFileFunc(hwnd, text, *cxClient);
+		return 0;
+	case IDM_EXIT:
+		SendMessage(hwnd, WM_CLOSE, 0, 0L);
+		return 0;
+	case IDM_WIDTH: // assumes that IDM_WHITE
+		text->mode = width;
+		isClassic = ResizeMsg(hwnd, lParam, text, iMaxWidth, cxClient, cyClient, iVscrollMax, iVscrollPos, iHscrollMax, iHscrollPos, cxChar, cyChar);
+	case IDM_CLASSIC: // Note: Logic below
+		if (isClassic)
+		{
+			text->mode = classic;
+			isClassic = 1;
+		}
+		CheckMode(hwnd, iSelection, hMenu, wParam);
+		return 0;
+	}
+	return 0;
+}
+
+int VscrollMsg(HWND hwnd, WPARAM wParam, int *iVscrollPos, int iVscrollMax, int cyClient, int cyChar)
+{
+	int iVscrollInc = 0;
+
+	switch (LOWORD(wParam))
+	{
+	case SB_TOP:
+		iVscrollInc = -*iVscrollPos;
+		break;
+	case SB_BOTTOM:
+		iVscrollInc = iVscrollMax - *iVscrollPos;
+		break;
+	case SB_LINEUP:
+		iVscrollInc = -1;
+		break;
+	case SB_LINEDOWN:
+		iVscrollInc = 1;
+		break;
+	case SB_PAGEUP:
+		iVscrollInc = min(-1, -cyClient / cyChar);
+		break;
+	case SB_PAGEDOWN:
+		iVscrollInc = max(1, cyClient / cyChar);
+		break;
+	case SB_THUMBTRACK:
+		iVscrollInc = HIWORD(wParam) - *iVscrollPos;
+		break;
+	default:
+		iVscrollInc = 0;
+	}
+	iVscrollInc = max(
+		-*iVscrollPos,
+		min(iVscrollInc, iVscrollMax - *iVscrollPos)
+	);
+	if (iVscrollInc != 0)
+	{
+		*iVscrollPos += iVscrollInc;
+		ScrollWindow(hwnd, 0, -cyChar * iVscrollInc, NULL, NULL);
+		SetScrollPos(hwnd, SB_VERT, *iVscrollPos, TRUE);
+		UpdateWindow(hwnd);
+	}
+	return 0;
+}
+
+int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, int *iHscrollPos, int iHscrollMax, int cxChar)
+{
+	int iHscrollInc = 0;
+
+	if (mode != width)
+	{
+		switch (LOWORD(wParam))
+		{
+		case SB_LINEUP:
+			iHscrollInc = -1;
+			break;
+		case SB_LINEDOWN:
+			iHscrollInc = 1;
+			break;
+		case SB_PAGEUP:
+			iHscrollInc = -8;
+			break;
+		case SB_PAGEDOWN:
+			iHscrollInc = 8;
+			break;
+		case SB_THUMBPOSITION:
+			iHscrollInc = HIWORD(wParam) - *iHscrollPos;
+			break;
+		default:
+			iHscrollInc = 0;
+		}
+		iHscrollInc = max(
+			-*iHscrollPos,
+			min(iHscrollInc, iHscrollMax - *iHscrollPos)
+		);
+		if (iHscrollInc != 0)
+		{
+			*iHscrollPos += iHscrollInc;
+			ScrollWindow(hwnd, -cxChar * iHscrollInc, 0, NULL, NULL);
+			SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
+		}
 	}
 	return 0;
 }

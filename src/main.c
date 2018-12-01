@@ -2,11 +2,6 @@
 #include "model.h"
 #include "view.h"
 
-#define IDM_OPEN 1
-#define IDM_EXIT 2
-#define IDM_CLASSIC 3
-#define IDM_WIDTH 4
-
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
@@ -64,21 +59,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
-	static int cxChar, cxCaps, cyChar, cxClient, cyClient, iMaxWidth,
-		iVscrollPos, iVscrollMax, iHscrollPos, iHscrollMax;
-	HDC hdc;
-	HMENU hMenu;
-	int i, x, y, iPaintBeg, iPaintEnd, iVscrollInc, iHscrollInc;
-	PAINTSTRUCT ps;
-	HFONT hfnt;
-	TEXTMETRIC tm;
-	static int iSelection = IDM_CLASSIC;
+	static int cxChar, cyChar, cxClient, cyClient, iSelection = IDM_CLASSIC;
+	static long iVscrollPos, iVscrollMax, iHscrollPos, iHscrollMax, iMaxWidth;
 	static MYTEXT text;
-	LPSTR *curStrings = NULL;
-    RECT rect;
-	DWORD curLen = 0, curNumLines = 0;
-	GetClientRect(hwnd, &rect);
-	int isClassic = 1;
 
 	if (text.numLines == 0)
 		LoadText(&text, FILE_NAME);
@@ -86,161 +69,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	switch (iMsg)
 	{
 	case WM_CREATE:
-		hfnt = GetStockObject(SYSTEM_FIXED_FONT);
-		hdc = GetDC(hwnd);
-		SelectObject(hdc, hfnt);
-		GetTextMetrics(hdc, &tm);
-		cxChar = tm.tmMaxCharWidth;
-		cyChar = tm.tmHeight + tm.tmExternalLeading;
-		ReleaseDC(hwnd, hdc);		
-		return 0;
+		return CreateMsg(hwnd, &cxChar, &cyChar);
 	case WM_SIZE:
-		ResizeMsg(hwnd, lParam, rect, &text, &iMaxWidth, &cxClient, &cyClient, &curNumLines, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar);
-		return 0;
+		return ResizeMsg(hwnd, lParam, &text, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar);
 	case WM_KEYDOWN:
-		switch (wParam)
-		{
-		case VK_PRIOR:
-			SendMessage(hwnd, WM_VSCROLL, SB_PAGEUP, 0L);
-			break;
-		case VK_NEXT:
-			SendMessage(hwnd, WM_VSCROLL, SB_PAGEDOWN, 0L);
-			break;
-		case VK_UP:
-			SendMessage(hwnd, WM_VSCROLL, SB_LINEUP, 0L);
-			break;
-		case VK_DOWN:
-			SendMessage(hwnd, WM_VSCROLL, SB_LINEDOWN, 0L);
-			break;
-		case VK_LEFT:
-			SendMessage(hwnd, WM_HSCROLL, SB_PAGEUP, 0L);
-			break;
-		case VK_RIGHT:
-			SendMessage(hwnd, WM_HSCROLL, SB_PAGEDOWN, 0L);
-			break;
-		}
-		return 0;
+		return KeydownMsg(hwnd, wParam);
 	case WM_VSCROLL:
-		switch (LOWORD(wParam))
-		{
-		case SB_TOP:
-			iVscrollInc = -iVscrollPos;
-			break;
-		case SB_BOTTOM:
-			iVscrollInc = iVscrollMax - iVscrollPos;
-			break;
-		case SB_LINEUP:
-			iVscrollInc = -1;
-			break;
-		case SB_LINEDOWN:
-			iVscrollInc = 1;
-			break;
-		case SB_PAGEUP:
-			iVscrollInc = min(-1, -cyClient / cyChar);
-			break;
-		case SB_PAGEDOWN:
-			iVscrollInc = max(1, cyClient / cyChar);
-				break;
-		case SB_THUMBTRACK:
-			iVscrollInc = HIWORD(wParam) - iVscrollPos;
-			break;
-		default:
-			iVscrollInc = 0;
-		}
-		iVscrollInc = max(
-			-iVscrollPos,
-			min(iVscrollInc, iVscrollMax - iVscrollPos)
-		);
-		if (iVscrollInc != 0)
-		{
-			iVscrollPos += iVscrollInc;
-			ScrollWindow(hwnd, 0, -cyChar * iVscrollInc, NULL, NULL);
-			SetScrollPos(hwnd, SB_VERT, iVscrollPos, TRUE);
-			UpdateWindow(hwnd);
-		}
-		return 0;
+		return VscrollMsg(hwnd, wParam, &iVscrollPos, iVscrollMax, cyClient, cyChar);
 	case WM_HSCROLL:
-		if (text.mode != width)
-		{
-			switch (LOWORD(wParam))
-			{
-			case SB_LINEUP:
-				iHscrollInc = -1;
-				break;
-			case SB_LINEDOWN:
-				iHscrollInc = 1;
-				break;
-			case SB_PAGEUP:
-				iHscrollInc = -8;
-				break;
-			case SB_PAGEDOWN:
-				iHscrollInc = 8;
-				break;
-			case SB_THUMBPOSITION:
-				iHscrollInc = HIWORD(wParam) - iHscrollPos;
-				break;
-			default:
-				iHscrollInc = 0;
-			}
-			iHscrollInc = max(
-				-iHscrollPos,
-				min(iHscrollInc, iHscrollMax - iHscrollPos)
-			);
-			if (iHscrollInc != 0)
-			{
-				iHscrollPos += iHscrollInc;
-				ScrollWindow(hwnd, -cxChar * iHscrollInc, 0, NULL, NULL);
-				SetScrollPos(hwnd, SB_HORZ, iHscrollPos, TRUE);
-			}
-		}
-		return 0;
+		return HscrollMsg(text.mode, wParam, hwnd, &iHscrollPos, iHscrollMax, cxChar);
 	case WM_PAINT:
-		curStrings = SelectStrings(text);
-		curLen = SelectNOfLines(text);
-		hdc = BeginPaint(hwnd, &ps);
-		iPaintBeg = max(0, iVscrollPos + ps.rcPaint.top / cyChar - 1);
-		iPaintEnd = min((int)curLen, iVscrollPos + ps.rcPaint.bottom / cyChar);
-		
-		for (i = iPaintBeg; i < iPaintEnd; i++)
-		{
-			x = cxChar * (1 - iHscrollPos);
-			y = cyChar * (1 - iVscrollPos + i);
-			TextOut(
-				hdc, x, y,
-				curStrings[i],
-				strlen(curStrings[i])
-			);
-			SetTextAlign(hdc, TA_LEFT | TA_TOP);
-		}
-		EndPaint(hwnd, &ps);
-		return 0;
+		return PaintMsg(hwnd, &text, iVscrollPos, iHscrollPos, cxChar, cyChar);
 	case WM_COMMAND:
-		hMenu = GetMenu(hwnd);
-
-		switch (LOWORD(wParam))
-		{
-		case IDM_OPEN:
-			OpenFileFunc(hwnd, &text, rect.right);
-			return 0;
-		case IDM_EXIT:
-			SendMessage(hwnd, WM_CLOSE, 0, 0L);
-			return 0;
-		case IDM_WIDTH: // assumes that IDM_WHITE
-			text.mode = width;
-			isClassic = ResizeMsg(hwnd, lParam, rect, &text, &iMaxWidth, &cxClient, &cyClient, &curNumLines, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar);
-		case IDM_CLASSIC: // Note: Logic below
-			if (isClassic)
-			{
-				text.mode = classic;
-				isClassic = 1;
-			}
-			CheckMenuItem(hMenu, iSelection, MF_UNCHECKED);
-			iSelection = LOWORD(wParam);
-			CheckMenuItem(hMenu, iSelection, MF_CHECKED);
-			InvalidateRect(hwnd, NULL, TRUE);
-			return 0;
-		}
-		return 0;
+		return CommandMsg(hwnd,wParam,lParam, &text, &iSelection, cxChar, cyChar, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos);
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
@@ -248,5 +89,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		DisplayDialog(hwnd);
 		return 0;
 	}
+
 	return DefWindowProc(hwnd, iMsg, wParam, lParam);
 }
