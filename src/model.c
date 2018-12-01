@@ -3,58 +3,37 @@
 #include <stdio.h>
 #include "model.h"
 #include "text.h"
-#include "header.h"
 
 LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 {
-	int i, j, prewLineEnd = 0;
-	DWORD cnt = 0, maxW = 0;
-
+	int cnt = 0, maxStrLen = 0, j = 0;
 	LPSTR *strings = (CHAR**)calloc(nOfLines, sizeof(CHAR*));
-	for (i = 0, j = 0; buffer[i] != '\0'; i++)
+
+	while (*buffer != '\0')
 	{
-		if (buffer[i] == '\n')
+		/* can be separated to func */
+		if (*buffer != '\n')
+			cnt++;
+		else
 		{
-			int tmp = 0;
-
- 			if (cnt > maxW)
-			{
-				maxW = cnt;
-				cnt = 0;
-			}
-			int curStrLen;
-			if (prewLineEnd == 0)
-			{
-				curStrLen = i - 1;
-				prewLineEnd--;
-			}
-			else
-				curStrLen = i - prewLineEnd - 2;
-
-			tmp = curStrLen + 1;
-			strings[j] = (CHAR*)calloc(tmp <= 1 ? 2 : tmp, sizeof(CHAR));
-			if (curStrLen <= 0)
-				curStrLen = 1;
-			strncpy(strings[j], buffer + prewLineEnd + 1, curStrLen);
-			strings[j][curStrLen] = '\0';
-			prewLineEnd = i;
-			j++;
+			strings[j] = (CHAR*)calloc(cnt + 1, sizeof(CHAR));
+			strncat(strings[j], buffer - cnt, cnt);
+			strncat(strings[j++], "\0", 1);
+			maxStrLen = max(maxStrLen, cnt);
+			cnt = 0;
 		}
-		cnt++;
-	}
+		buffer++;
+		if (*buffer == '\0')
+		{
+			strings[j] = (CHAR*)calloc(cnt + 1, sizeof(CHAR));
+			strncat(strings[j], buffer - cnt, cnt);
+			strncat(strings[j++], "\0", 1);
+			maxStrLen = max(maxStrLen, cnt);
+			cnt = 0;
+		}
+	} 
 
-	if (i - 1 != prewLineEnd)
-	{
-		int curStrLen = i - prewLineEnd - 1;
-
-		strings[j] = (CHAR*)calloc(curStrLen + 1, sizeof(CHAR));
-		strncpy(strings[j], buffer + prewLineEnd + 1, curStrLen);
-		strings[j][curStrLen] = '\0';
-		if ((DWORD)curStrLen > maxW)
-			maxW = curStrLen;
-	}
-
-	*width = maxW;
+	*width = maxStrLen;
 	return strings;
 }
 
@@ -79,58 +58,65 @@ int BuildWidthStrings(MYTEXT *text, DWORD width)
 
 	ClearString(newBuffer, newBufLen);
 	ClearWidthStrings(text);
-	for (i = 0; *buffer != '\0'; i++)
+	if ((int)text->maxWidth < width)
 	{
-		DWORD len1, len2, tmpLen = width;
-		LPSTR widthString = (LPSTR)malloc((tmpLen + 1) * sizeof(CHAR));
-
-		ClearString(widthString, tmpLen);
-		while (*buffer != '\0')
-		{
-			while (IsSpace(*buffer) && strlen(widthString) < tmpLen + 1)
-			{
-				strncat(widthString, buffer, 1);
-				buffer++;
-			}
-
-			len1 = GetWordLength(buffer);
-			len2 = strlen(widthString);
-			if (len1 + 1 < width - len2) 
-			{
-				int length = len1 == width - len2 ? len1 : len1 + 1;
-				
-				strncat(widthString, buffer, length - 1);                                  
-				strncat(widthString, " ", 1);
-				if ((int)strlen(buffer) < length)
-					buffer += strlen(buffer);
-				else
-				    buffer += length;
-			}
-			else if (len1 + 1 >= width && len2 == 0)                                             
-			{
-				int l = width - 1;
-				strncat(widthString, buffer, l);                                    
-				buffer += l;
-				strncat(widthString, "\n", 1);                                    
-				break;
-			}
-			else
-			{
-				if (strlen(widthString) < tmpLen)
-					strncat(widthString, "\n", 1);
-				else
-					printf("error\n");
-				break;
-			}
-		}
-		strncat(newBuffer, widthString, (strlen(widthString)));
-		free(widthString);
+		text->curWidth = width;
+		text->widthStrings = text->strings;
 	}
-	text->numWidthLines = GetNumLines(newBuffer);
-	realloc(newBuffer, strlen(newBuffer) + 1);
-	text->widthStrings = BuildStrings(newBuffer, text->numWidthLines, &text->curWidth); // ?!?!
-	text->curWidth = width;
+	else
+	{
+		for (i = 0; *buffer != '\0'; i++)
+		{
+			DWORD len1, len2, tmpLen = width;
+			LPSTR widthString = (LPSTR)malloc((tmpLen + 1) * sizeof(CHAR));
 
+			ClearString(widthString, tmpLen);
+			while (*buffer != '\0')
+			{
+				while (IsSpace(*buffer) && strlen(widthString) < tmpLen + 1)
+				{
+					strncat(widthString, buffer, 1);
+					buffer++;
+				}
+
+				len1 = GetWordLength(buffer);
+				len2 = strlen(widthString);
+				if (len1 + 1 < width - len2)
+				{
+					int length = len1 == width - len2 ? len1 : len1 + 1;
+
+					strncat(widthString, buffer, length - 1);
+					strncat(widthString, " ", 1);
+					if ((int)strlen(buffer) < length)
+						buffer += strlen(buffer);
+					else
+						buffer += length;
+				}
+				else if (len1 + 1 >= width && len2 == 0)
+				{
+					int l = width - 1;
+					strncat(widthString, buffer, l);
+					buffer += l;
+					strncat(widthString, "\n", 1);
+					break;
+				}
+				else
+				{
+					if (strlen(widthString) < tmpLen)
+						strncat(widthString, "\n", 1);
+					else
+						printf("error\n");
+					break;
+				}
+			}
+			strncat(newBuffer, widthString, (strlen(widthString)));
+			free(widthString);
+		}
+		text->numWidthLines = GetNumLines(newBuffer);
+		realloc(newBuffer, strlen(newBuffer) + 1);
+		text->widthStrings = BuildStrings(newBuffer, text->numWidthLines, &text->curWidth); // ?!?!
+		text->curWidth = width;
+	}
 	free(newBuffer);
 	return 0;
 }

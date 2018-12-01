@@ -57,6 +57,7 @@ void CheckMode(HWND hwnd, int iSelection, HMENU hMenu, WPARAM wParam)
 int ResizeMsg(HWND hwnd, LPARAM lParam, RECT rect, MYTEXT *text, int *iMaxWidth, int *cxClient, int *cyClient, int *curNumLines, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int cxChar, int cyChar)
 {
 	int tmp = 0;
+	int width = rect.right / cxChar;
 
 	if (text->mode == classic)
 		*iMaxWidth = text->maxWidth;
@@ -65,16 +66,14 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, RECT rect, MYTEXT *text, int *iMaxWidth,
 
 	*cxClient = LOWORD(lParam);
 	*cyClient = HIWORD(lParam);
-	if (text->mode == width && (int)text->maxWidth != rect.right / cxChar)
+	if (text->mode == width)
 	{
 		GetClientRect(hwnd, &rect);
 		BuildWidthStrings(text, rect.right / cxChar);
 		*curNumLines = text->numWidthLines;
 	}
 	else
-	{
 		*curNumLines = text->numLines;
-	}
 	tmp = *curNumLines + 2 - *cyClient / cyChar;
 	*iVscrollMax = max(tmp, 0);
 	*iVscrollPos = min(*iVscrollPos, *iVscrollMax);
