@@ -4,6 +4,18 @@
 #include "model.h"
 #include "text.h"
 
+LPSTR GenFunc(LPSTR buffer, int *cnt, int *maxL)
+{
+	LPSTR s = (CHAR*)calloc(*cnt + 1, sizeof(CHAR));
+
+	strncat(s, buffer - *cnt, *cnt);
+	strncat(s, "\0", 1);
+	*maxL = max(*maxL, *cnt);
+	*cnt = 0;
+
+	return s;
+}
+
 LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 {
 	int cnt = 0, maxStrLen = 0, j = 0;
@@ -11,26 +23,13 @@ LPSTR *BuildStrings(LPSTR buffer, int nOfLines, DWORD *width)
 
 	while (*buffer != '\0')
 	{
-		/* can be separated to func */
 		if (*buffer != '\n')
 			cnt++;
 		else
-		{
-			strings[j] = (CHAR*)calloc(cnt + 1, sizeof(CHAR));
-			strncat(strings[j], buffer - cnt, cnt);
-			strncat(strings[j++], "\0", 1);
-			maxStrLen = max(maxStrLen, cnt);
-			cnt = 0;
-		}
+			strings[j++] = GenFunc(buffer, &cnt, &maxStrLen);
 		buffer++;
 		if (*buffer == '\0')
-		{
-			strings[j] = (CHAR*)calloc(cnt + 1, sizeof(CHAR));
-			strncat(strings[j], buffer - cnt, cnt);
-			strncat(strings[j++], "\0", 1);
-			maxStrLen = max(maxStrLen, cnt);
-			cnt = 0;
-		}
+			strings[j] = GenFunc(buffer, &cnt, &maxStrLen);
 	} 
 
 	*width = maxStrLen;
@@ -58,10 +57,16 @@ int BuildWidthStrings(MYTEXT *text, DWORD width)
 
 	ClearString(newBuffer, newBufLen);
 	ClearWidthStrings(text);
-	if ((int)text->maxWidth < width)
+	if ((int)text->maxWidth <= width)
 	{
+		text->widthStrings = (CHAR**)calloc(text->numLines, sizeof(CHAR*));
+		for (i = 0; i < (int)text->numLines; i++)
+		{
+			text->widthStrings[i] = (CHAR*)calloc(strlen(text->strings[i]) + 1, sizeof(CHAR));
+			strcpy(text->widthStrings[i], text->strings[i]);
+		}
 		text->curWidth = width;
-		text->widthStrings = text->strings;
+		text->numWidthLines = text->numLines;
 	}
 	else
 	{
@@ -73,10 +78,15 @@ int BuildWidthStrings(MYTEXT *text, DWORD width)
 			ClearString(widthString, tmpLen);
 			while (*buffer != '\0')
 			{
-				while (IsSpace(*buffer) && strlen(widthString) < tmpLen + 1)
+				while (IsSpace(*buffer) && strlen(widthString) < tmpLen)
 				{
 					strncat(widthString, buffer, 1);
 					buffer++;
+				}
+
+				if (IsSpace(*buffer))
+				{
+					break;
 				}
 
 				len1 = GetWordLength(buffer);
