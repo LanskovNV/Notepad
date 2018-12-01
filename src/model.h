@@ -13,6 +13,7 @@ typedef enum {
 */
 typedef struct tagMYTEXT {
 	mode_t mode;
+	int pos;
 	DWORD numLines;
 	DWORD curWidth;
 	DWORD numWidthLines;

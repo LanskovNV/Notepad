@@ -52,7 +52,8 @@ static void ClearWidthStrings(MYTEXT *text)
 int BuildWidthStrings(MYTEXT *text, int width)
 {
 	LPSTR buffer = text->buffer;
-	LPSTR *strings = (LPSTR*)calloc(text->bufLen,sizeof(LPSTR*)); /* строк не больше чем символов 100% */
+	LPSTR newBuffer = (LPSTR)calloc((text->bufLen + 1) * 2, sizeof(CHAR));
+
 	int i;
 
 	ClearWidthStrings(text);
@@ -60,107 +61,23 @@ int BuildWidthStrings(MYTEXT *text, int width)
 	{
 		int newWidth = width;
 
-		/* переместись назад до пробела */
 		if ((int)strlen(buffer) > newWidth)
 			while (!IsSpace(*(buffer + newWidth)) && newWidth != 0)
 				newWidth--;
 		if (newWidth == 0)
 			newWidth = width;
-		/* скопируй строку */
-		strings[i] = (LPSTR)calloc(newWidth + 1, sizeof(CHAR));
-		strncpy(strings[i], buffer, newWidth);
+
+		newWidth = min(newWidth, (int)strlen(buffer));
+		strncat(newBuffer, buffer, newWidth);
+		strncat(newBuffer, "\n", 1);
 		buffer += newWidth;
 	}
-	realloc(strings, i * sizeof(LPSTR*));
-	text->numWidthLines = i;
+	text->numWidthLines = (int)GetNumLines(newBuffer);
 	text->curWidth = width;
-	text->widthStrings = strings;
+	text->widthStrings = BuildStrings(newBuffer, (int)GetNumLines(newBuffer), &width);
 
 	return 0;
 }
-/*
-int BuildWidthStrings(MYTEXT *text, DWORD width)
-{
-	int i, newBufLen = (text->bufLen + 1) * 2;
-	LPSTR buffer = text->buffer;
-	LPSTR newBuffer = (LPSTR)malloc(newBufLen * sizeof(CHAR));
-
-	ClearString(newBuffer, newBufLen);
-	ClearWidthStrings(text);
-	if ((int)text->maxWidth <= width)
-	{
-		text->widthStrings = (CHAR**)calloc(text->numLines, sizeof(CHAR*));
-		for (i = 0; i < (int)text->numLines; i++)
-		{
-			text->widthStrings[i] = (CHAR*)calloc(strlen(text->strings[i]) + 1, sizeof(CHAR));
-			strcpy(text->widthStrings[i], text->strings[i]);
-		}
-		text->curWidth = width;
-		text->numWidthLines = text->numLines;
-	}
-	else
-	{
-		for (i = 0; *buffer != '\0'; i++)
-		{
-			DWORD len1, len2, tmpLen = width;
-			LPSTR widthString = (LPSTR)malloc((tmpLen + 1) * sizeof(CHAR));
-
-			ClearString(widthString, tmpLen);
-			while (*buffer != '\0')
-			{
-				while (IsSpace(*buffer) && strlen(widthString) < tmpLen)
-				{
-					strncat(widthString, buffer, 1);
-					buffer++;
-				}
-
-				if (IsSpace(*buffer))
-				{
-					break;
-				}
-
-				len1 = GetWordLength(buffer);
-				len2 = strlen(widthString);
-				if (len1 + 1 < width - len2)
-				{
-					int length = len1 == width - len2 ? len1 : len1 + 1;
-
-					strncat(widthString, buffer, length - 1);
-					strncat(widthString, " ", 1);
-					if ((int)strlen(buffer) < length)
-						buffer += strlen(buffer);
-					else
-						buffer += length;
-				}
-				else if (len1 + 1 >= width && len2 == 0)
-				{
-					int l = width - 1;
-					strncat(widthString, buffer, l);
-					buffer += l;
-					strncat(widthString, "\n", 1);
-					break;
-				}
-				else
-				{
-					if (strlen(widthString) < tmpLen)
-						strncat(widthString, "\n", 1);
-					else
-						printf("error\n");
-					break;
-				}
-			}
-			strncat(newBuffer, widthString, (strlen(widthString)));
-			free(widthString);
-		}
-		text->numWidthLines = GetNumLines(newBuffer);
-		realloc(newBuffer, strlen(newBuffer) + 1);
-		text->widthStrings = BuildStrings(newBuffer, text->numWidthLines, &text->curWidth); // ?!?!
-		text->curWidth = width;
-	}
-	free(newBuffer);
-	return 0;
-}
-*/
 
 void LoadText(MYTEXT *text, char *fileName)
 {

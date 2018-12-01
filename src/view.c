@@ -67,7 +67,7 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, RECT rect, MYTEXT *text, int *iMaxWidth,
 	*cxClient = LOWORD(lParam);
 	*cyClient = HIWORD(lParam);
 	GetClientRect(hwnd, &rect);
-	nwidth = rect.right / cxChar;
+	nwidth = rect.right / cxChar - 1;
 
 	if (text->mode == width && (text->widthStrings == NULL || text->curWidth != nwidth))
 	{
