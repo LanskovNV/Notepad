@@ -1,5 +1,4 @@
 #include <windows.h>
-#include "model.h"
 #include "view.h"
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
