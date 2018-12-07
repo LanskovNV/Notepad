@@ -54,7 +54,7 @@ void CheckMode(HWND hwnd, int *iSelection, HMENU hMenu, WPARAM wParam)
 	InvalidateRect(hwnd, NULL, TRUE);
 }
 
-int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int cxChar, int cyChar, int *xCaret, int *yCaret)
+int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int cxChar, int cyChar)
 {
 	int tmp = 0;
 	int nwidth, curNumLines;
@@ -67,8 +67,6 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxCli
 
 	*cxClient = LOWORD(lParam);
 	*cyClient = HIWORD(lParam);
-	*xCaret = 0;
-	*yCaret = 0;
 	GetClientRect(hwnd, &rect);
 	nwidth = rect.right / cxChar - 1;
 
@@ -94,8 +92,8 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxCli
 		SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
 	}
 
-	if (hwnd == GetFocus())
-		SetCaretPos(*xCaret * cxChar, *yCaret * cyChar);
+	// if (hwnd == GetFocus())
+		// SetCaretPos(*xCaret * cxChar, *yCaret * cyChar);
 
 	return 0;
 }
@@ -126,6 +124,7 @@ int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxCh
 	curStrings = SelectStrings(*text);
 	curLen = SelectNOfLines(*text);
 	hdc = BeginPaint(hwnd, &ps);
+	SelectObject(hdc, GetStockObject(SYSTEM_FIXED_FONT));
 	iPaintBeg = max(0, iVscrollPos + ps.rcPaint.top / cyChar - 1);
 	iPaintEnd = min((int)curLen, iVscrollPos + ps.rcPaint.bottom / cyChar);
 
@@ -159,31 +158,43 @@ int KeydownMsg(HWND hwnd, WPARAM wParam, int *xCaret, int *yCaret, int cxChar, i
 		break;
 	case VK_UP:
 		*yCaret = max(*yCaret - 1, 0);
+		if (*yCaret == 0)
+		{
+			SendMessage(hwnd, WM_VSCROLL, SB_LINEUP, 0L); 
+			*yCaret += 1;
+		}
 		break;
-		// SendMessage(hwnd, WM_VSCROLL, SB_LINEUP, 0L);
-		// break;
 	case VK_DOWN:
 		*yCaret = min(*yCaret + 1, cyBuffer - 1);
+		if (*yCaret == cyBuffer - 1)
+		{
+			SendMessage(hwnd, WM_VSCROLL, SB_LINEDOWN, 0L);
+			*yCaret -= 1;
+		}
 		break;
-		// SendMessage(hwnd, WM_VSCROLL, SB_LINEDOWN, 0L);
-		// break;
 	case VK_LEFT:
 		*xCaret = max(*xCaret - 1, 0);
+		if (*xCaret == 0)
+		{
+			SendMessage(hwnd, WM_HSCROLL, SB_PAGEUP, 0L);
+			*xCaret += 1;
+		}
 		break;
-		// SendMessage(hwnd, WM_HSCROLL, SB_PAGEUP, 0L);
-		// break;
 	case VK_RIGHT:
 		*xCaret = min(*xCaret + 1, cxBuffer - 1);
+		if (*xCaret == cxBuffer - 1)
+		{
+			SendMessage(hwnd, WM_HSCROLL, SB_PAGEDOWN, 0L);
+			*xCaret -= 1;
+		}
 		break;
-		// SendMessage(hwnd, WM_HSCROLL, SB_PAGEDOWN, 0L);
-		// break;
 	}
 
 	SetCaretPos(*xCaret * cxChar, *yCaret * cyChar);
 	return 0;
 }
 
-int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int *xCaret, int *yCaret)
+int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos)
 {
 	HMENU hMenu = GetMenu(hwnd);
 	int isClassic = 1;
@@ -198,7 +209,7 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSele
 		return 0;
 	case IDM_WIDTH: // assumes that IDM_WHITE
 		text->mode = width;
-		isClassic = ResizeMsg(hwnd, lParam, text, iMaxWidth, cxClient, cyClient, iVscrollMax, iVscrollPos, iHscrollMax, iHscrollPos, cxChar, cyChar, xCaret, yCaret);
+		isClassic = ResizeMsg(hwnd, lParam, text, iMaxWidth, cxClient, cyClient, iVscrollMax, iVscrollPos, iHscrollMax, iHscrollPos, cxChar, cyChar);
 	case IDM_CLASSIC: // Note: Logic below
 		if (isClassic)
 		{

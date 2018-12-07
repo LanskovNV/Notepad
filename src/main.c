@@ -70,7 +70,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		return CreateMsg(hwnd, &cxChar, &cyChar);
 	case WM_SIZE:
-		return ResizeMsg(hwnd, lParam, &text, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar, &xCaret, &yCaret);
+		return ResizeMsg(hwnd, lParam, &text, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar);
 	case WM_SETFOCUS:
 
 		CreateCaret(hwnd, NULL, cxChar, cyChar);
@@ -93,7 +93,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 		return PaintMsg(hwnd, &text, iVscrollPos, iHscrollPos, cxChar, cyChar);
 	case WM_COMMAND:
-		return CommandMsg(hwnd,wParam,lParam, &text, &iSelection, cxChar, cyChar, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, &xCaret, &yCaret);
+		return CommandMsg(hwnd,wParam,lParam, &text, &iSelection, cxChar, cyChar, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos);
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;

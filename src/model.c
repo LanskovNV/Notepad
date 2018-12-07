@@ -4,6 +4,16 @@
 #include "model.h"
 #include "text.h"
 
+
+int CountWideScrollPos(MYTEXT *text)
+{
+
+}
+
+int CountScrollPos(MYTEXT *text)
+{
+}
+
 LPSTR GenFunc(LPSTR buffer, int *cnt, int *maxL)
 {
 	LPSTR s = (CHAR*)calloc(*cnt + 1, sizeof(CHAR));
