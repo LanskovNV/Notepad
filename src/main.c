@@ -58,7 +58,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
-	static int cxChar, cyChar, cxClient, cyClient, iSelection = IDM_CLASSIC;
+	static int cxChar, cyChar, cxClient, cyClient, iSelection = IDM_CLASSIC, xCaret, yCaret;
 	static long iVscrollPos, iVscrollMax, iHscrollPos, iHscrollMax, iMaxWidth;
 	static MYTEXT text;
 
@@ -70,9 +70,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		return CreateMsg(hwnd, &cxChar, &cyChar);
 	case WM_SIZE:
-		return ResizeMsg(hwnd, lParam, &text, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar);
+		return ResizeMsg(hwnd, lParam, &text, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar, &xCaret, &yCaret);
+	case WM_SETFOCUS:
+
+		CreateCaret(hwnd, NULL, cxChar, cyChar);
+		SetCaretPos(xCaret * cxChar, yCaret * cyChar);
+		ShowCaret(hwnd);
+		return 0;
+
+	case WM_KILLFOCUS:
+
+		HideCaret(hwnd);
+		DestroyCaret();
+		return 0;
+
 	case WM_KEYDOWN:
-		return KeydownMsg(hwnd, wParam);
+		return KeydownMsg(hwnd, wParam, &xCaret, &yCaret, cxChar, cyChar, cxClient, cyClient);
 	case WM_VSCROLL:
 		return VscrollMsg(hwnd, wParam, &iVscrollPos, iVscrollMax, cyClient, cyChar);
 	case WM_HSCROLL:
@@ -80,7 +93,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 		return PaintMsg(hwnd, &text, iVscrollPos, iHscrollPos, cxChar, cyChar);
 	case WM_COMMAND:
-		return CommandMsg(hwnd,wParam,lParam, &text, &iSelection, cxChar, cyChar, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos);
+		return CommandMsg(hwnd,wParam,lParam, &text, &iSelection, cxChar, cyChar, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, &xCaret, &yCaret);
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;

@@ -118,6 +118,7 @@ void LoadText(MYTEXT *text, char *fileName)
 	}
 	else
 	{
+		text->pos = 0;
 		text->bufLen = strlen(text->buffer);
 		text->maxWordLen = GetMaxWordLen(text->buffer);
 		text->numLines = GetNumLines(text->buffer);

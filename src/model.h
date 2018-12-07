@@ -1,7 +1,7 @@
 #ifndef MODEL_H_INCLUDED
 #define MODEL_H_INCLUDED
 
-#define FILE_NAME "text.txt"
+#define FILE_NAME "преступление и наказание.txt"
 
 typedef enum {
 	classic,
@@ -13,7 +13,7 @@ typedef enum {
 */
 typedef struct tagMYTEXT {
 	mode_t mode;
-	int pos;
+	DWORD pos;
 	DWORD numLines;
 	DWORD curWidth;
 	DWORD numWidthLines;
