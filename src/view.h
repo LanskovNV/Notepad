@@ -14,7 +14,7 @@ void CheckMode(HWND hwnd, int *iSelection, HMENU hMenu, WPARAM wParam);
 int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int cxChar, int cyChar);
 int CreateMsg(HWND hwnd, int *cxChar, int *cyChar);
 int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxChar, int cyChar);
-int KeydownMsg(HWND hwnd, WPARAM wParam, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient);
+int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient);
 int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos);
 int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, int *iHscrollPos, int iHscrollMax, int cxChar);
 int VscrollMsg(HWND hwnd, WPARAM wParam, int *iVscrollPos, int iVscrollMax, int cyClient, int cyChar);

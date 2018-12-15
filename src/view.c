@@ -92,9 +92,6 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxCli
 		SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
 	}
 
-	// if (hwnd == GetFocus())
-		// SetCaretPos(*xCaret * cxChar, *yCaret * cyChar);
-
 	return 0;
 }
 
@@ -130,8 +127,8 @@ int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxCh
 
 	for (i = iPaintBeg; i < iPaintEnd; i++)
 	{
-		x = cxChar * (1 - iHscrollPos);
-		y = cyChar * (1 - iVscrollPos + i);
+		x = cxChar * (-1 * iHscrollPos);
+		y = cyChar * (i - iVscrollPos);
 		TextOut(
 			hdc, x, y,
 			curStrings[i],
@@ -143,7 +140,7 @@ int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxCh
 	return 0;
 }
 
-int KeydownMsg(HWND hwnd, WPARAM wParam, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient)
+int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient)
 {
 	int cxBuffer = max(1, cxClient / cxChar);
 	int cyBuffer = max(1, cyClient / cyChar);
@@ -157,36 +154,16 @@ int KeydownMsg(HWND hwnd, WPARAM wParam, int *xCaret, int *yCaret, int cxChar, i
 		SendMessage(hwnd, WM_VSCROLL, SB_PAGEDOWN, 0L);
 		break;
 	case VK_UP:
-		*yCaret = max(*yCaret - 1, 0);
-		if (*yCaret == 0)
-		{
-			SendMessage(hwnd, WM_VSCROLL, SB_LINEUP, 0L); 
-			*yCaret += 1;
-		}
+		UpdateClassPos(hwnd, text, up, xCaret, yCaret, cxBuffer, cyBuffer);
 		break;
 	case VK_DOWN:
-		*yCaret = min(*yCaret + 1, cyBuffer - 1);
-		if (*yCaret == cyBuffer - 1)
-		{
-			SendMessage(hwnd, WM_VSCROLL, SB_LINEDOWN, 0L);
-			*yCaret -= 1;
-		}
+		UpdateClassPos(hwnd, text, down, xCaret, yCaret, cxBuffer, cyBuffer);
 		break;
 	case VK_LEFT:
-		*xCaret = max(*xCaret - 1, 0);
-		if (*xCaret == 0)
-		{
-			SendMessage(hwnd, WM_HSCROLL, SB_PAGEUP, 0L);
-			*xCaret += 1;
-		}
+		UpdateClassPos(hwnd, text, left, xCaret, yCaret, cxBuffer, cyBuffer);
 		break;
 	case VK_RIGHT:
-		*xCaret = min(*xCaret + 1, cxBuffer - 1);
-		if (*xCaret == cxBuffer - 1)
-		{
-			SendMessage(hwnd, WM_HSCROLL, SB_PAGEDOWN, 0L);
-			*xCaret -= 1;
-		}
+		UpdateClassPos(hwnd, text, right, xCaret, yCaret, cxBuffer, cyBuffer);
 		break;
 	}
 
