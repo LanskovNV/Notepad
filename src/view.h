@@ -15,6 +15,6 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxCli
 int CreateMsg(HWND hwnd, int *cxChar, int *cyChar);
 int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxChar, int cyChar);
 int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos);
-int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos);
+int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int xCaret, int yCaret);
 
 #endif // VIEW_H_INCLUDED

@@ -173,7 +173,7 @@ int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret,
 	return 0;
 }
 
-int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos)
+int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int xCaret, int yCaret)
 {
 	HMENU hMenu = GetMenu(hwnd);
 	int isClassic = 1;
@@ -197,6 +197,7 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSele
 			isClassic = 1;
 			WideToClassPos(text);
 		}
+		SetCaretPos(xCaret * cxChar, yCaret * cyChar);
 		CheckMode(hwnd, iSelection, hMenu, wParam);
 		return 0;
 	}

@@ -83,30 +83,6 @@ int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, int *iHscrollPos, int iHsc
 	return 0;
 }
 
-static int FixFocus(HWND hwnd, mode_t mode, pos_t *curPos, int cxBuffer, int cyBuffer, int *iHscrollPos, int iHscrollMax, int cxChar)
-{
-	static int correct = 0;
-
-	if (mode == classic)
-	{
-		int iHscrollInc = 0;
-
-		if (curPos->x >= cxBuffer - 1)
-		{
-			iHscrollInc = cxBuffer * (cxBuffer / curPos->x - 1) + curPos->x % cxBuffer + 1;// -correct;
-
-			if (iHscrollInc != 0)
-			{
-				*iHscrollPos += iHscrollInc;
-				ScrollWindow(hwnd, -cxChar * iHscrollInc, 0, NULL, NULL);
-				SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
-			}
-			correct = iHscrollInc;
-		}
-	}
-	return 0;
-}
-
 static int IsLastSpaces(LPSTR buf, int bufLen, int curLen)
 {
 	int ans = curLen == 1 ? 0 : 1;
@@ -139,7 +115,7 @@ int WideToClassPos(MYTEXT *text)
 		{
 			if (j >= tmp)
 				break;
-			cnt++;
+			cnt++;=
 		}
 	}
 
@@ -150,7 +126,6 @@ int WideToClassPos(MYTEXT *text)
 		for (j = 0; j < curStrLen && cnt > 0; j++)
 			cnt--;
 	}
-
 	newPos.x = j;
 	newPos.y = i == 0 ? 0 : i - 1;
 	text->pos = newPos;
@@ -195,30 +170,44 @@ int ClassToWidePos(MYTEXT *text)
 	return 0;
 }
 
-static int MoveLeft(pos_t *curPos , LPSTR *buffer, HWND hwnd, int cxBuffer)
+static int MoveLeft(pos_t *curPos, pos_t caret, LPSTR *buffer, HWND hwnd, int cxBuffer, int *iHscrollPos, int iHscrollMax, int cxChar, mode_t mode)
 {
 	int curStringLen = 0;
+	int decrease = 1;
 
 	if ((curPos->y > 0 || curPos->x > 0))
 	{
 		do
 		{
-			if (curPos->x == 0 && curPos->y > 0)
+			if (caret.x <= 0 && curPos->x != 0)
 			{
-				curPos->y -= 1;
-				curStringLen = strlen(buffer[curPos->y]);
-				curPos->x = curStringLen - 1;
+				int iHscrollInc = -1; 
+
+				decrease = 0;
+				*iHscrollPos += iHscrollInc;
+				ScrollWindow(hwnd, -cxChar * iHscrollInc, 0, NULL, NULL);
+				SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
+				curPos->x--;
 			}
 			else
 			{
-				curPos->x--;
+				if (curPos->x == 0 && curPos->y > 0)
+				{
+					curPos->y -= 1;
+					curStringLen = strlen(buffer[curPos->y]);
+					curPos->x = curStringLen - 1;
+				}
+				else
+				{
+					curPos->x--;
+				}
 			}
 		} while (curPos->x >= 0 && (curPos->y > 0 || curPos->x > 0) && IsSpace(buffer[curPos->y][curPos->x]));
 	}
-	return 0;
+	return decrease;
 }
 
-static int MoveRight(pos_t *curPos, LPSTR *buffer, HWND hwnd, int cxBuffer, int numLines, int lastLineLen, int *iHscrollPos, int iHscrollMax, int cxChar, mode_t mode)
+static int MoveRight(pos_t *curPos, pos_t caret, LPSTR *buffer, HWND hwnd, int cxBuffer, int numLines, int lastLineLen, int *iHscrollPos, int iHscrollMax, int cxChar, mode_t mode)
 {
 	int curStringLen = strlen(buffer[curPos->y]);
 	int increase = 1;
@@ -227,10 +216,15 @@ static int MoveRight(pos_t *curPos, LPSTR *buffer, HWND hwnd, int cxBuffer, int 
 	{
 		do
 		{
-			if (curPos->x >= cxBuffer)
+			if (caret.x == cxBuffer && curPos->x != curStringLen)
 			{
+				int iHscrollInc = 1; // cxBuffer * (tmp - inc) + curPos->x % cxBuffer + inc - correct; 
+
 				increase = 0;
-				FixFocus(hwnd, mode, curPos, cxBuffer, 0, iHscrollPos, iHscrollMax, cxChar);
+				*iHscrollPos += iHscrollInc;
+				ScrollWindow(hwnd, -cxChar * iHscrollInc, 0, NULL, NULL);
+				SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
+				curPos->x++;
 			}
 			else
 			{
@@ -260,15 +254,18 @@ int UpdateClassPos(HWND hwnd, MYTEXT *text, case_t c, int *xCaret, int *yCaret, 
 	int lastLineLen = strlen(buffer[numLines - 1]);
 	int curStringLen = strlen(buffer[curPos.y]);
 	int chX = 1, chY = 1;
-	/* TODO: fix scroll !!! */
+	pos_t caret;
+	
+	caret.x = *xCaret;
+	caret.y = *yCaret;
 
 	switch (c)
 	{
 	case right:
-		chX = MoveRight(&curPos, buffer, hwnd, cxBuffer, numLines, lastLineLen, iHscrollPos, iHscrollMax, cxChar, text->mode);
+		chX = MoveRight(&curPos, caret, buffer, hwnd, cxBuffer, numLines, lastLineLen, iHscrollPos, iHscrollMax, cxChar, text->mode);
 		break;
 	case left:
-		MoveLeft(&curPos, buffer, hwnd, cxBuffer);
+		chX = MoveLeft(&curPos, caret, buffer, hwnd, cxBuffer, iHscrollPos, iHscrollMax, cxChar, text->mode);
 		break;
 	case up:
 		if (curPos.y > 0)
@@ -280,7 +277,7 @@ int UpdateClassPos(HWND hwnd, MYTEXT *text, case_t c, int *xCaret, int *yCaret, 
 			
 			if (IsSpace(buffer[curPos.y][curPos.x]))
 			{
-				MoveLeft(&curPos, buffer, hwnd, cxBuffer);
+				MoveLeft(&curPos, caret, buffer, hwnd, cxBuffer, iHscrollPos, iHscrollMax, cxChar, text->mode);
 			}
 		}
 		break;
@@ -295,9 +292,9 @@ int UpdateClassPos(HWND hwnd, MYTEXT *text, case_t c, int *xCaret, int *yCaret, 
 			if (IsSpace(buffer[curPos.y][curPos.x]))
 			{
 				if (IsLastSpaces(buffer[curPos.y] + curPos.x, curStringLen - curPos.x, curStringLen))
-					MoveLeft(&curPos, buffer, hwnd, cxBuffer);
+					MoveLeft(&curPos, caret, buffer, hwnd, cxBuffer, iHscrollPos, iHscrollMax, cxChar, text->mode);
 				else 
-					MoveRight(&curPos, buffer, hwnd, cxBuffer, numLines, lastLineLen, iHscrollPos, iHscrollMax, cxChar, text->mode);
+					MoveRight(&curPos, caret, buffer, hwnd, cxBuffer, numLines, lastLineLen, iHscrollPos, iHscrollMax, cxChar, text->mode);
 			}
 		}
 		break;
@@ -306,10 +303,9 @@ int UpdateClassPos(HWND hwnd, MYTEXT *text, case_t c, int *xCaret, int *yCaret, 
 		return 1;
 	}
 	
-	// FixFocus(hwnd, text->mode, &curPos, cxBuffer, cyBuffer, iHscrollPos, iHscrollMax, cxChar);
 	if (chX)
 		*xCaret = curPos.x;
-	if (chX)
+	if (chY)
 		*yCaret = curPos.y;
 	text->pos = curPos;
 	
