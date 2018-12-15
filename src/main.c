@@ -85,7 +85,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		return 0;
 
 	case WM_KEYDOWN:
-		return KeydownMsg(hwnd, wParam, &text, &xCaret, &yCaret, cxChar, cyChar, cxClient, cyClient);
+		return KeydownMsg(hwnd, wParam, &text, &xCaret, &yCaret, cxChar, cyChar, cxClient, cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos);
 	case WM_VSCROLL:
 		return VscrollMsg(hwnd, wParam, &iVscrollPos, iVscrollMax, cyClient, cyChar);
 	case WM_HSCROLL:

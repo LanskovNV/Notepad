@@ -40,11 +40,15 @@ typedef struct tagMYTEXT {
 /**
  * functions to work with text
 */
+int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, int *iHscrollPos, int iHscrollMax, int cxChar);
+int VscrollMsg(HWND hwnd, WPARAM wParam, int *iVscrollPos, int iVscrollMax, int cyClient, int cyChar);
 void LoadText(MYTEXT *text, char *fileName);
 void OpenFileFunc(HWND hWnd, MYTEXT *text, DWORD width);
 int BuildWidthStrings(MYTEXT *text, int width);
 DWORD SelectNOfLines(MYTEXT text);
 LPSTR *SelectStrings(MYTEXT text);
-int UpdateClassPos(HWND hwnd, MYTEXT *text, case_t c, int *xCaret, int *yCaret, int cxBuffer, int cyBuffer);
+int UpdateClassPos(HWND hwnd, MYTEXT *text, case_t c, int *xCaret, int *yCaret, int cxBuffer, int cyBuffer, int *iHscrollPos, int iHscrollMax, int cxChar);
+int ClassToWidePos(MYTEXT *text);
+int WideToClassPos(MYTEXT *text);
 
 #endif // MODEL_H_INCLUDED

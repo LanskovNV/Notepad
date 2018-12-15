@@ -65,8 +65,10 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxCli
 	else
 		*iMaxWidth = *cxClient;
 
-	*cxClient = LOWORD(lParam);
-	*cyClient = HIWORD(lParam);
+	if (LOWORD(lParam) != 0)
+		*cxClient = LOWORD(lParam);
+	if (HIWORD(lParam) != 0)
+		*cyClient = HIWORD(lParam);
 	GetClientRect(hwnd, &rect);
 	nwidth = rect.right / cxChar - 1;
 
@@ -140,7 +142,7 @@ int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxCh
 	return 0;
 }
 
-int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient)
+int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos)
 {
 	int cxBuffer = max(1, cxClient / cxChar);
 	int cyBuffer = max(1, cyClient / cyChar);
@@ -154,16 +156,16 @@ int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret,
 		SendMessage(hwnd, WM_VSCROLL, SB_PAGEDOWN, 0L);
 		break;
 	case VK_UP:
-		UpdateClassPos(hwnd, text, up, xCaret, yCaret, cxBuffer, cyBuffer);
+		UpdateClassPos(hwnd, text, up, xCaret, yCaret, cxBuffer, cyBuffer, iVscrollPos, iVscrollMax, cyChar);
 		break;
 	case VK_DOWN:
-		UpdateClassPos(hwnd, text, down, xCaret, yCaret, cxBuffer, cyBuffer);
+		UpdateClassPos(hwnd, text, down, xCaret, yCaret, cxBuffer, cyBuffer, iVscrollPos, iVscrollMax, cyChar);
 		break;
 	case VK_LEFT:
-		UpdateClassPos(hwnd, text, left, xCaret, yCaret, cxBuffer, cyBuffer);
+		UpdateClassPos(hwnd, text, left, xCaret, yCaret, cxBuffer, cyBuffer, iHscrollPos, iHscrollMax, cxChar);
 		break;
 	case VK_RIGHT:
-		UpdateClassPos(hwnd, text, right, xCaret, yCaret, cxBuffer, cyBuffer);
+		UpdateClassPos(hwnd, text, right, xCaret, yCaret, cxBuffer, cyBuffer, iHscrollPos, iHscrollMax, cxChar);
 		break;
 	}
 
@@ -187,11 +189,13 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSele
 	case IDM_WIDTH: // assumes that IDM_WHITE
 		text->mode = width;
 		isClassic = ResizeMsg(hwnd, lParam, text, iMaxWidth, cxClient, cyClient, iVscrollMax, iVscrollPos, iHscrollMax, iHscrollPos, cxChar, cyChar);
+		ClassToWidePos(text);
 	case IDM_CLASSIC: // Note: Logic below
 		if (isClassic)
 		{
 			text->mode = classic;
 			isClassic = 1;
+			WideToClassPos(text);
 		}
 		CheckMode(hwnd, iSelection, hMenu, wParam);
 		return 0;
@@ -199,86 +203,3 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSele
 	return 0;
 }
 
-int VscrollMsg(HWND hwnd, WPARAM wParam, int *iVscrollPos, int iVscrollMax, int cyClient, int cyChar)
-{
-	int iVscrollInc = 0;
-
-	switch (LOWORD(wParam))
-	{
-	case SB_TOP:
-		iVscrollInc = -*iVscrollPos;
-		break;
-	case SB_BOTTOM:
-		iVscrollInc = iVscrollMax - *iVscrollPos;
-		break;
-	case SB_LINEUP:
-		iVscrollInc = -1;
-		break;
-	case SB_LINEDOWN:
-		iVscrollInc = 1;
-		break;
-	case SB_PAGEUP:
-		iVscrollInc = min(-1, -cyClient / cyChar);
-		break;
-	case SB_PAGEDOWN:
-		iVscrollInc = max(1, cyClient / cyChar);
-		break;
-	case SB_THUMBTRACK:
-		iVscrollInc = HIWORD(wParam) - *iVscrollPos;
-		break;
-	default:
-		iVscrollInc = 0;
-	}
-	iVscrollInc = max(
-		-*iVscrollPos,
-		min(iVscrollInc, iVscrollMax - *iVscrollPos)
-	);
-	if (iVscrollInc != 0)
-	{
-		*iVscrollPos += iVscrollInc;
-		ScrollWindow(hwnd, 0, -cyChar * iVscrollInc, NULL, NULL);
-		SetScrollPos(hwnd, SB_VERT, *iVscrollPos, TRUE);
-		UpdateWindow(hwnd);
-	}
-	return 0;
-}
-
-int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, int *iHscrollPos, int iHscrollMax, int cxChar)
-{
-	int iHscrollInc = 0;
-
-	if (mode != width)
-	{
-		switch (LOWORD(wParam))
-		{
-		case SB_LINEUP:
-			iHscrollInc = -1;
-			break;
-		case SB_LINEDOWN:
-			iHscrollInc = 1;
-			break;
-		case SB_PAGEUP:
-			iHscrollInc = -8;
-			break;
-		case SB_PAGEDOWN:
-			iHscrollInc = 8;
-			break;
-		case SB_THUMBPOSITION:
-			iHscrollInc = HIWORD(wParam) - *iHscrollPos;
-			break;
-		default:
-			iHscrollInc = 0;
-		}
-		iHscrollInc = max(
-			-*iHscrollPos,
-			min(iHscrollInc, iHscrollMax - *iHscrollPos)
-		);
-		if (iHscrollInc != 0)
-		{
-			*iHscrollPos += iHscrollInc;
-			ScrollWindow(hwnd, -cxChar * iHscrollInc, 0, NULL, NULL);
-			SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
-		}
-	}
-	return 0;
-}
