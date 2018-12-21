@@ -115,7 +115,7 @@ int WideToClassPos(MYTEXT *text)
 		{
 			if (j >= tmp)
 				break;
-			cnt++;=
+			cnt++;
 		}
 	}
 
