@@ -4,7 +4,6 @@
 #include "model.h"
 #include "text.h"
 
-
 int VscrollMsg(HWND hwnd, WPARAM wParam, int *iVscrollPos, int iVscrollMax, int cyClient, int cyChar)
 {
 	int iVscrollInc = 0;
