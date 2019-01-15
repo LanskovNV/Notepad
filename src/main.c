@@ -1,5 +1,6 @@
 #include <windows.h>
 #include "view.h"
+#include "model.h"
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -58,42 +59,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
-	static int cxChar, cyChar, cxClient, cyClient, iSelection = IDM_CLASSIC, xCaret, yCaret;
-	static long iVscrollPos, iVscrollMax, iHscrollPos, iHscrollMax, iMaxWidth;
-	static MYTEXT text;
+	static view_t view;
+	static text_t text;
 
-	if (text.numLines == 0)
+	/* load default text (defined in model.h) */
+	if (text.numClStrings == 0)
 		LoadText(&text, FILE_NAME);
 
 	switch (iMsg)
 	{
 	case WM_CREATE:
-		return CreateMsg(hwnd, &cxChar, &cyChar);
+		return CreateMsg(hwnd, &view);
 	case WM_SIZE:
-		return ResizeMsg(hwnd, lParam, &text, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, cxChar, cyChar);
+		return ResizeMsg(hwnd, lParam, &text, &view);
 	case WM_SETFOCUS:
-
-		CreateCaret(hwnd, NULL, cxChar, cyChar);
-		SetCaretPos(xCaret * cxChar, yCaret * cyChar);
-		ShowCaret(hwnd);
-		return 0;
-
+		return SetFocusMsg(hwnd, &view);
 	case WM_KILLFOCUS:
-
-		HideCaret(hwnd);
-		DestroyCaret();
-		return 0;
-
+		return KillFocusMsg(hwnd);
 	case WM_KEYDOWN:
-		return KeydownMsg(hwnd, wParam, &text, &xCaret, &yCaret, cxChar, cyChar, cxClient, cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos);
+		return KeydownMsg(hwnd, wParam, &text, &view);
 	case WM_VSCROLL:
-		return VscrollMsg(hwnd, wParam, &iVscrollPos, iVscrollMax, cyClient, cyChar);
+		return VscrollMsg(hwnd, wParam, &view);
 	case WM_HSCROLL:
-		return HscrollMsg(text.mode, wParam, hwnd, &iHscrollPos, iHscrollMax, cxChar);
+		return HscrollMsg(text.mode, wParam, hwnd, &view);
 	case WM_PAINT:
-		return PaintMsg(hwnd, &text, iVscrollPos, iHscrollPos, cxChar, cyChar);
+		return PaintMsg(hwnd, &text, &view);
 	case WM_COMMAND:
-		return CommandMsg(hwnd,wParam,lParam, &text, &iSelection, cxChar, cyChar, &iMaxWidth, &cxClient, &cyClient, &iVscrollMax, &iVscrollPos, &iHscrollMax, &iHscrollPos, xCaret, yCaret);
+		return CommandMsg(hwnd,wParam,lParam, &text, &view);
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;

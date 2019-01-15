@@ -1,5 +1,156 @@
 #include <windows.h>
 #include "view.h"
+#include "model.h"
+
+static int MoveLeft(HWND hwnd, view_t *view, text_t *text)
+{
+	int curStringLen = 0;
+	int decrease = 1;
+	LPSTR *buffer = SelectStrings(*text);
+
+	if ((text->pos.y > 0 || text->pos.x > 0))
+	{
+		do
+		{
+			if (view->caret.x <= 0 && text->pos.x != 0)
+			{
+				int iHscrollInc = -1;
+
+				decrease = 0;
+				view->iHscrollPos += iHscrollInc;
+				ScrollWindow(hwnd, -view->charSize.x * iHscrollInc, 0, NULL, NULL);
+				SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
+				text->pos.x--;
+			}
+			else
+			{
+				if (text->pos.x == 0 && text->pos.y > 0)
+				{
+					text->pos.y -= 1;
+					curStringLen = strlen(buffer[text->pos.y]);
+					text->pos.x = curStringLen - 1;
+				}
+				else
+				{
+					text->pos.x--;
+				}
+			}
+		} while (text->pos.x >= 0 && (text->pos.y > 0 || text->pos.x > 0) && IsSpace(buffer[text->pos.y][text->pos.x]));
+	}
+	return decrease;
+}
+
+static int MoveRight(HWND hwnd, view_t *view, text_t *text)
+{
+	LPSTR *buffer = SelectStrings(*text);
+	int curStringLen = strlen(buffer[text->pos.y]);
+	int increase = 1;
+	int nOfLines = SelectNOfLines(*text);
+	int lastLineLen = strlen(buffer[nOfLines - 1]);
+	int cxBuffer = max(1, view->client.x / view->charSize.x);
+	int cyBuffer = max(1, view->client.y / view->charSize.y);
+
+	if ((text->pos.y < nOfLines || text->pos.x < lastLineLen - 1))
+	{
+		do
+		{
+			if (view->caret.x == cxBuffer && text->pos.x != curStringLen)
+			{
+				int iHscrollInc = 1; 
+
+				increase = 0;
+				view->iHscrollPos += iHscrollInc;
+				ScrollWindow(hwnd, -view->charSize.x * iHscrollInc, 0, NULL, NULL);
+				SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
+				text->pos.x++;
+			}
+			else
+			{
+				if (text->pos.x == curStringLen)
+				{
+					text->pos.y += 1;
+					if (text->pos.y < nOfLines)
+						curStringLen = strlen(buffer[text->pos.y]);
+					if (text->pos.y != nOfLines)
+						text->pos.x = 0;
+				}
+				else
+				{
+					text->pos.x++;
+				}
+			}
+		} while ((text->pos.y < nOfLines - 1 || text->pos.x < lastLineLen - 1) && IsSpace(buffer[text->pos.y][text->pos.x]));
+	}
+	return increase;
+}
+
+/***************************************
+	Processing movements (arrows etc.) */
+
+int UpdateClassPos(HWND hwnd, text_t *text, view_t *view, case_t c)
+{
+	LPSTR *buffer = SelectStrings(*text);
+	pos_t curPos = text->pos;
+	int numClStrings = SelectNOfLines(*text);
+	int lastLineLen = strlen(buffer[numClStrings - 1]);
+	int curStringLen = strlen(buffer[curPos.y]);
+	int chX = 1, chY = 1;
+
+	switch (c)
+	{
+	case right:
+		chX = MoveRight(hwnd, view, text);
+		break;
+	case left:
+		chX = MoveLeft(hwnd, view, text);
+		break;
+	case up:
+		if (curPos.y > 0)
+		{
+			curPos.y -= 1;
+			curStringLen = strlen(buffer[curPos.y]);
+			if (curPos.x > curStringLen)
+				curPos.x = curStringLen - 1;
+
+			if (IsSpace(buffer[curPos.y][curPos.x]))
+			{
+				MoveLeft(hwnd, view, text);
+			}
+		}
+		break;
+	case down:
+		if (curPos.y < numClStrings - 1)
+		{
+			curPos.y += 1;
+			curStringLen = strlen(buffer[curPos.y]);
+			if (curStringLen <= curPos.x)
+				curPos.x = max(0, curStringLen - 1);
+
+			if (IsSpace(buffer[curPos.y][curPos.x]))
+			{
+				if (IsLastSpaces(buffer[curPos.y] + curPos.x, curStringLen - curPos.x, curStringLen))
+					MoveLeft(hwnd, view, text);
+				else
+					MoveRight(hwnd, view, text);
+			}
+		}
+		break;
+	default:
+		printf("error in UpdatePos func: incorrect parameter c");
+		return 1;
+	}
+
+	text->pos = curPos;
+	if (chX)
+		view->caret.x = text->pos.x;
+	if (chY)
+		view->caret.y = text->pos.y;
+
+	return 0;
+}
+
+/************************************
+	Dialog functions (used in main) */
 
 LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
@@ -46,6 +197,9 @@ void DisplayDialog(HWND hwnd)
 	CreateWindowW(L"Button", L"yes", WS_VISIBLE | WS_CHILD, 20, 20, 100, 40, hDlg, (HMENU)2, NULL, NULL);
 }
 
+/********************************
+	Windows messages processing */
+
 void CheckMode(HWND hwnd, int *iSelection, HMENU hMenu, WPARAM wParam)
 {
 	CheckMenuItem(hMenu, *iSelection, MF_UNCHECKED);
@@ -53,11 +207,13 @@ void CheckMode(HWND hwnd, int *iSelection, HMENU hMenu, WPARAM wParam)
 	CheckMenuItem(hMenu, *iSelection, MF_CHECKED);
 	InvalidateRect(hwnd, NULL, TRUE);
 }
-
-int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int cxChar, int cyChar)
+///***********************
+/// continue here!!!!!!!!!
+///***********************
+int ResizeMsg(HWND hwnd, LPARAM lParam, text_t *text, view_t *view)
 {
 	int tmp = 0;
-	int nwidth, curNumLines;
+	int nwidth, curnumClStrings;
 	RECT rect;
 
 	if (text->mode == classic)
@@ -72,14 +228,14 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, MYTEXT *text, int *iMaxWidth, int *cxCli
 	GetClientRect(hwnd, &rect);
 	nwidth = rect.right / cxChar - 1;
 
-	if (text->mode == width && (text->widthStrings == NULL || text->curWidth != nwidth))
+	if (text->mode == width && (text->trStrings == NULL || text->curWidth != nwidth))
 	{
-		BuildWidthStrings(text, nwidth);
-		curNumLines = text->numWidthLines;
+		BuildtrStrings(text, nwidth);
+		curnumClStrings = text->numTrStrings;
 	}
 	else
-		curNumLines = text->numLines;
-	tmp = curNumLines + 2 - *cyClient / cyChar;
+		curnumClStrings = text->numClStrings;
+	tmp = curnumClStrings + 2 - *cyClient / cyChar;
 	*iVscrollMax = max(tmp, 0);
 	*iVscrollPos = min(*iVscrollPos, *iVscrollMax);
 	SetScrollRange(hwnd, SB_VERT, 0, *iVscrollMax, FALSE);
@@ -113,7 +269,7 @@ int CreateMsg(HWND hwnd, int *cxChar, int *cyChar)
 	return 0;
 }
 
-int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxChar, int cyChar)
+int PaintMsg(HWND hwnd, text_t *text, int iVscrollPos, int iHscrollPos, int cxChar, int cyChar)
 {
 	PAINTSTRUCT ps;
 	LPSTR *curStrings = NULL;
@@ -142,7 +298,7 @@ int PaintMsg(HWND hwnd, MYTEXT *text, int iVscrollPos, int iHscrollPos, int cxCh
 	return 0;
 }
 
-int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos)
+int KeydownMsg(HWND hwnd, WPARAM wParam, text_t *text, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos)
 {
 	int cxBuffer = max(1, cxClient / cxChar);
 	int cyBuffer = max(1, cyClient / cyChar);
@@ -173,7 +329,7 @@ int KeydownMsg(HWND hwnd, WPARAM wParam, MYTEXT *text, int *xCaret, int *yCaret,
 	return 0;
 }
 
-int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int xCaret, int yCaret)
+int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int xCaret, int yCaret)
 {
 	HMENU hMenu = GetMenu(hwnd);
 	int isClassic = 1;
@@ -200,6 +356,101 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, MYTEXT *text, int *iSele
 		SetCaretPos(xCaret * cxChar, yCaret * cyChar);
 		CheckMode(hwnd, iSelection, hMenu, wParam);
 		return 0;
+	}
+	return 0;
+}
+
+int SetFocusMsg(HWND hwnd, view_t *view)
+{
+	CreateCaret(hwnd, NULL, view->charSize.x, view->charSize.y);
+	SetCaretPos(view->caret.x * view->charSize.x, view->caret.y * view->charSize.y);
+	ShowCaret(hwnd);
+
+	return 0;
+}
+
+int KillFocusMsg(HWND hwnd)
+{
+	HideCaret(hwnd);
+	DestroyCaret();
+
+	return 0;
+}
+
+int VscrollMsg(HWND hwnd, WPARAM wParam, view_t *view)
+{
+	int iVscrollInc = 0;
+
+	switch (LOWORD(wParam))
+	{
+	case SB_TOP:
+		iVscrollInc = -view->iVscrollPos;
+		break;
+	case SB_BOTTOM:
+		iVscrollInc = view->iVscrollMax - view->iVscrollPos;
+		break;
+	case SB_LINEUP:
+		iVscrollInc = -1;
+		break;
+	case SB_LINEDOWN:
+		iVscrollInc = 1;
+		break;
+	case SB_PAGEUP:
+		iVscrollInc = min(-1, -view->cyClient / view->cyChar);
+		break;
+	case SB_PAGEDOWN:
+		iVscrollInc = max(1, view->cyClient / view->cyChar);
+		break;
+	case SB_THUMBTRACK:
+		iVscrollInc = HIWORD(wParam) - view->iVscrollPos;
+		break;
+	default:
+		iVscrollInc = 0;
+	}
+	iVscrollInc = max(
+		-view->iVscrollPos,
+		min(iVscrollInc, view->iVscrollMax - view->iVscrollPos)
+	);
+	if (iVscrollInc != 0)
+	{
+		view->iVscrollPos += iVscrollInc;
+		ScrollWindow(hwnd, 0, -view->cyChar * iVscrollInc, NULL, NULL);
+		SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
+		UpdateWindow(hwnd);
+	}
+	return 0;
+}
+
+int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, view_t *view)
+{
+	int iHscrollInc = 0;
+
+	if (mode != width)
+	{
+		switch (LOWORD(wParam))
+		{
+		case SB_LINEUP:
+			iHscrollInc = -1;
+			break;
+		case SB_LINEDOWN:
+			iHscrollInc = 1;
+			break;
+		case SB_THUMBPOSITION:
+			iHscrollInc = HIWORD(wParam) - view->iHscrollPos;
+			break;
+		default:
+			iHscrollInc = 0;
+		}
+		iHscrollInc = max(
+			-view->iHscrollPos,
+			min(iHscrollInc, view->iHscrollMax - view->iHscrollPos)
+		);
+		if (iHscrollInc != 0)
+		{
+			view->iHscrollPos += iHscrollInc;
+			ScrollWindow(hwnd, -view->cxChar * iHscrollInc, 0, NULL, NULL);
+			SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
+		}
 	}
 	return 0;
 }
