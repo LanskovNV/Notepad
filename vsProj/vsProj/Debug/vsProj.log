@@ -1,38 +1,5 @@
 ﻿  main.c
-d:\politech\notepad\src\main.c(75): warning C4047: 'function': 'int' differs in levels of indirection from 'MYVIEW *'
-d:\politech\notepad\src\main.c(75): warning C4024: 'CreateCaret': different types for formal and actual parameter 3
-d:\politech\notepad\src\main.c(75): error C2198: 'CreateCaret': too few arguments for call
   model.c
-d:\politech\notepad\src\model.c(32): error C2100: illegal indirection
-d:\politech\notepad\src\model.c(40): error C2065: 'iVscrollPos': undeclared identifier
-d:\politech\notepad\src\model.c(40): error C2100: illegal indirection
-d:\politech\notepad\src\model.c(40): error C2065: 'iVscrollMax': undeclared identifier
-d:\politech\notepad\src\model.c(43): error C2065: 'iVscrollPos': undeclared identifier
-d:\politech\notepad\src\model.c(43): error C2100: illegal indirection
-d:\politech\notepad\src\model.c(44): error C2065: 'cyChar': undeclared identifier
-d:\politech\notepad\src\model.c(45): error C2065: 'iVscrollPos': undeclared identifier
-d:\politech\notepad\src\model.c(45): error C2100: illegal indirection
-d:\politech\notepad\src\model.c(52): warning C4028: formal parameter 4 different from declaration
-d:\politech\notepad\src\model.c(52): warning C4029: declared formal parameter list different from definition
-d:\politech\notepad\src\model.c(249): warning C4028: formal parameter 4 different from declaration
-d:\politech\notepad\src\model.c(249): warning C4029: declared formal parameter list different from definition
   view.c
-d:\politech\notepad\src\view.c(58): warning C4028: formal parameter 4 different from declaration
-d:\politech\notepad\src\view.c(58): warning C4029: declared formal parameter list different from definition
-d:\politech\notepad\src\view.c(77): warning C4013: 'BuildWidthStrings' undefined; assuming extern returning int
-d:\politech\notepad\src\view.c(101): warning C4028: formal parameter 2 different from declaration
-d:\politech\notepad\src\view.c(101): warning C4029: declared formal parameter list different from definition
-d:\politech\notepad\src\view.c(117): warning C4028: formal parameter 3 different from declaration
-d:\politech\notepad\src\view.c(117): warning C4029: declared formal parameter list different from definition
-d:\politech\notepad\src\view.c(123): warning C4013: 'SelectStrings' undefined; assuming extern returning int
-d:\politech\notepad\src\view.c(123): warning C4047: '=': 'LPSTR *' differs in levels of indirection from 'int'
-d:\politech\notepad\src\view.c(124): warning C4013: 'SelectNOfLines' undefined; assuming extern returning int
-d:\politech\notepad\src\view.c(146): warning C4028: formal parameter 4 different from declaration
-d:\politech\notepad\src\view.c(146): warning C4029: declared formal parameter list different from definition
-d:\politech\notepad\src\view.c(159): warning C4013: 'UpdateClassPos' undefined; assuming extern returning int
-d:\politech\notepad\src\view.c(177): warning C4028: formal parameter 5 different from declaration
-d:\politech\notepad\src\view.c(177): warning C4029: declared formal parameter list different from definition
-d:\politech\notepad\src\view.c(184): warning C4013: 'OpenFileFunc' undefined; assuming extern returning int
-d:\politech\notepad\src\view.c(192): warning C4013: 'ClassToWidePos' undefined; assuming extern returning int
-d:\politech\notepad\src\view.c(198): warning C4013: 'WideToClassPos' undefined; assuming extern returning int
   Generating Code...
+  vsProj.vcxproj -> D:\POLITECH\Notepad\vsProj\Debug\vsProj.exe

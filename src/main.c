@@ -1,6 +1,5 @@
 #include <windows.h>
 #include "view.h"
-#include "model.h"
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -85,7 +84,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 		return PaintMsg(hwnd, &text, &view);
 	case WM_COMMAND:
-		return CommandMsg(hwnd,wParam,lParam, &text, &view);
+		return CommandMsg(hwnd, wParam, lParam, &text, &view);
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;

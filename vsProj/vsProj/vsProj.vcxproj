@@ -124,7 +124,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\model.h" />
-    <ClInclude Include="..\..\src\structures.h" />
     <ClInclude Include="..\..\src\text.h" />
     <ClInclude Include="..\..\src\view.h" />
   </ItemGroup>

@@ -1,6 +1,30 @@
 #include <windows.h>
+#include <stdio.h>
+#include "text.h"
 #include "view.h"
 #include "model.h"
+
+static void CheckMode(HWND hwnd, int *iSelection, HMENU hMenu, WPARAM wParam)
+{
+	CheckMenuItem(hMenu, *iSelection, MF_UNCHECKED);
+	*iSelection = LOWORD(wParam);
+	CheckMenuItem(hMenu, *iSelection, MF_CHECKED);
+	InvalidateRect(hwnd, NULL, TRUE);
+}
+
+static int IsLastSpaces(LPSTR buf, int bufLen, int curLen)
+{
+	int ans = curLen == 1 ? 0 : 1;
+	int i;
+
+	for (i = 0; i < bufLen; i++)
+		if (!IsSpace(*buf))
+		{
+			ans = 0;
+			break;
+		}
+	return ans;
+}
 
 static int MoveLeft(HWND hwnd, view_t *view, text_t *text)
 {
@@ -87,7 +111,7 @@ static int MoveRight(HWND hwnd, view_t *view, text_t *text)
 /***************************************
 	Processing movements (arrows etc.) */
 
-int UpdateClassPos(HWND hwnd, text_t *text, view_t *view, case_t c)
+static int UpdatePos(HWND hwnd, text_t *text, view_t *view, case_t c)
 {
 	LPSTR *buffer = SelectStrings(*text);
 	pos_t curPos = text->pos;
@@ -200,16 +224,6 @@ void DisplayDialog(HWND hwnd)
 /********************************
 	Windows messages processing */
 
-void CheckMode(HWND hwnd, int *iSelection, HMENU hMenu, WPARAM wParam)
-{
-	CheckMenuItem(hMenu, *iSelection, MF_UNCHECKED);
-	*iSelection = LOWORD(wParam);
-	CheckMenuItem(hMenu, *iSelection, MF_CHECKED);
-	InvalidateRect(hwnd, NULL, TRUE);
-}
-///***********************
-/// continue here!!!!!!!!!
-///***********************
 int ResizeMsg(HWND hwnd, LPARAM lParam, text_t *text, view_t *view)
 {
 	int tmp = 0;
@@ -217,43 +231,43 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, text_t *text, view_t *view)
 	RECT rect;
 
 	if (text->mode == classic)
-		*iMaxWidth = text->maxWidth;
+		view->iMaxWidth = text->maxWidth;
 	else
-		*iMaxWidth = *cxClient;
+		view->iMaxWidth = view->client.x;
 
 	if (LOWORD(lParam) != 0)
-		*cxClient = LOWORD(lParam);
+		view->client.x = LOWORD(lParam);
 	if (HIWORD(lParam) != 0)
-		*cyClient = HIWORD(lParam);
+		view->client.y = HIWORD(lParam);
 	GetClientRect(hwnd, &rect);
-	nwidth = rect.right / cxChar - 1;
+	nwidth = rect.right / view->charSize.x - 1;
 
-	if (text->mode == width && (text->trStrings == NULL || text->curWidth != nwidth))
+	if (text->mode == text->curWidth && (text->trStrings == NULL || text->curWidth != nwidth))
 	{
 		BuildtrStrings(text, nwidth);
 		curnumClStrings = text->numTrStrings;
 	}
 	else
 		curnumClStrings = text->numClStrings;
-	tmp = curnumClStrings + 2 - *cyClient / cyChar;
-	*iVscrollMax = max(tmp, 0);
-	*iVscrollPos = min(*iVscrollPos, *iVscrollMax);
-	SetScrollRange(hwnd, SB_VERT, 0, *iVscrollMax, FALSE);
-	SetScrollPos(hwnd, SB_VERT, *iVscrollPos, TRUE);
+	tmp = curnumClStrings + 2 - view->client.y / view->charSize.y;
+	view->iVscrollMax = max(tmp, 0);
+	view->iVscrollPos = min(view->iVscrollPos, view->iVscrollMax);
+	SetScrollRange(hwnd, SB_VERT, 0, view->iVscrollMax, FALSE);
+	SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
 
-	if (text->mode != width)
+	if (text->mode != transfer)
 	{
-		tmp = 2 + (*iMaxWidth - *cxClient) / cxChar;
-		*iHscrollMax = max(0, tmp);
-		*iHscrollPos = min(*iHscrollPos, *iHscrollMax);
-		SetScrollRange(hwnd, SB_HORZ, 0, *iHscrollMax, FALSE);
-		SetScrollPos(hwnd, SB_HORZ, *iHscrollPos, TRUE);
+		tmp = 2 + (view->iMaxWidth - view->client.x) / view->charSize.x;
+		view->iHscrollMax = max(0, tmp);
+		view->iHscrollPos = min(view->iHscrollPos, view->iHscrollMax);
+		SetScrollRange(hwnd, SB_HORZ, 0, view->iHscrollMax, FALSE);
+		SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
 	}
 
 	return 0;
 }
 
-int CreateMsg(HWND hwnd, int *cxChar, int *cyChar)
+int CreateMsg(HWND hwnd, view_t *view)
 {
 	HFONT hfnt;
 	TEXTMETRIC tm;
@@ -263,13 +277,13 @@ int CreateMsg(HWND hwnd, int *cxChar, int *cyChar)
 	hdc = GetDC(hwnd);
 	SelectObject(hdc, hfnt);
 	GetTextMetrics(hdc, &tm);
-	* cxChar = tm.tmMaxCharWidth;
-	* cyChar = tm.tmHeight + tm.tmExternalLeading;
+	view->charSize.x = tm.tmMaxCharWidth;
+	view->charSize.y = tm.tmHeight + tm.tmExternalLeading;
 	ReleaseDC(hwnd, hdc);
 	return 0;
 }
 
-int PaintMsg(HWND hwnd, text_t *text, int iVscrollPos, int iHscrollPos, int cxChar, int cyChar)
+int PaintMsg(HWND hwnd, text_t *text, view_t *view)
 {
 	PAINTSTRUCT ps;
 	LPSTR *curStrings = NULL;
@@ -280,13 +294,13 @@ int PaintMsg(HWND hwnd, text_t *text, int iVscrollPos, int iHscrollPos, int cxCh
 	curLen = SelectNOfLines(*text);
 	hdc = BeginPaint(hwnd, &ps);
 	SelectObject(hdc, GetStockObject(SYSTEM_FIXED_FONT));
-	iPaintBeg = max(0, iVscrollPos + ps.rcPaint.top / cyChar - 1);
-	iPaintEnd = min((int)curLen, iVscrollPos + ps.rcPaint.bottom / cyChar);
+	iPaintBeg = max(0, view->iVscrollPos + ps.rcPaint.top / view->charSize.y - 1);
+	iPaintEnd = min((int)curLen, view->iVscrollPos + ps.rcPaint.bottom / view->charSize.y);
 
 	for (i = iPaintBeg; i < iPaintEnd; i++)
 	{
-		x = cxChar * (-1 * iHscrollPos);
-		y = cyChar * (i - iVscrollPos);
+		x = view->charSize.x * (-1 * view->iHscrollPos);
+		y = view->charSize.y * (i - view->iVscrollPos);
 		TextOut(
 			hdc, x, y,
 			curStrings[i],
@@ -298,10 +312,10 @@ int PaintMsg(HWND hwnd, text_t *text, int iVscrollPos, int iHscrollPos, int cxCh
 	return 0;
 }
 
-int KeydownMsg(HWND hwnd, WPARAM wParam, text_t *text, int *xCaret, int *yCaret, int cxChar, int cyChar, int cxClient, int cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos)
+int KeydownMsg(HWND hwnd, WPARAM wParam, text_t *text, view_t *view)
 {
-	int cxBuffer = max(1, cxClient / cxChar);
-	int cyBuffer = max(1, cyClient / cyChar);
+	int cxBuffer = max(1, view->client.x / view->charSize.x);
+	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
 	switch (wParam)
 	{
@@ -312,24 +326,24 @@ int KeydownMsg(HWND hwnd, WPARAM wParam, text_t *text, int *xCaret, int *yCaret,
 		SendMessage(hwnd, WM_VSCROLL, SB_PAGEDOWN, 0L);
 		break;
 	case VK_UP:
-		UpdateClassPos(hwnd, text, up, xCaret, yCaret, cxBuffer, cyBuffer, iVscrollPos, iVscrollMax, cyChar);
+		UpdatePos(hwnd, text, view, up);
 		break;
 	case VK_DOWN:
-		UpdateClassPos(hwnd, text, down, xCaret, yCaret, cxBuffer, cyBuffer, iVscrollPos, iVscrollMax, cyChar);
+		UpdatePos(hwnd, text, view, down);
 		break;
 	case VK_LEFT:
-		UpdateClassPos(hwnd, text, left, xCaret, yCaret, cxBuffer, cyBuffer, iHscrollPos, iHscrollMax, cxChar);
+		UpdatePos(hwnd, text, view, left);
 		break;
 	case VK_RIGHT:
-		UpdateClassPos(hwnd, text, right, xCaret, yCaret, cxBuffer, cyBuffer, iHscrollPos, iHscrollMax, cxChar);
+		UpdatePos(hwnd, text, view, right);
 		break;
 	}
 
-	SetCaretPos(*xCaret * cxChar, *yCaret * cyChar);
+	SetCaretPos(view->caret.y * view->charSize.x, view->caret.y * view->charSize.y);
 	return 0;
 }
 
-int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, int *iSelection, int cxChar, int cyChar, int *iMaxWidth, int *cxClient, int *cyClient, int *iVscrollMax, int *iVscrollPos, int *iHscrollMax, int *iHscrollPos, int xCaret, int yCaret)
+int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, view_t *view)
 {
 	HMENU hMenu = GetMenu(hwnd);
 	int isClassic = 1;
@@ -337,14 +351,14 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, int *iSele
 	switch (LOWORD(wParam))
 	{
 	case IDM_OPEN:
-		OpenFileFunc(hwnd, text, *cxClient);
+		OpenFileFunc(hwnd, text, view->client.x);
 		return 0;
 	case IDM_EXIT:
 		SendMessage(hwnd, WM_CLOSE, 0, 0L);
 		return 0;
 	case IDM_WIDTH: // assumes that IDM_WHITE
-		text->mode = width;
-		isClassic = ResizeMsg(hwnd, lParam, text, iMaxWidth, cxClient, cyClient, iVscrollMax, iVscrollPos, iHscrollMax, iHscrollPos, cxChar, cyChar);
+		text->mode = text->curWidth;
+		isClassic = ResizeMsg(hwnd, lParam, text, view);
 		ClassToWidePos(text);
 	case IDM_CLASSIC: // Note: Logic below
 		if (isClassic)
@@ -353,8 +367,8 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, int *iSele
 			isClassic = 1;
 			WideToClassPos(text);
 		}
-		SetCaretPos(xCaret * cxChar, yCaret * cyChar);
-		CheckMode(hwnd, iSelection, hMenu, wParam);
+		SetCaretPos(view->caret.x * view->charSize.x, view->caret.y * view->charSize.y);
+		CheckMode(hwnd, &view->iSelection, hMenu, wParam);
 		return 0;
 	}
 	return 0;
@@ -396,10 +410,10 @@ int VscrollMsg(HWND hwnd, WPARAM wParam, view_t *view)
 		iVscrollInc = 1;
 		break;
 	case SB_PAGEUP:
-		iVscrollInc = min(-1, -view->cyClient / view->cyChar);
+		iVscrollInc = min(-1, -view->client.y / view->charSize.y);
 		break;
 	case SB_PAGEDOWN:
-		iVscrollInc = max(1, view->cyClient / view->cyChar);
+		iVscrollInc = max(1, view->client.y / view->charSize.y);
 		break;
 	case SB_THUMBTRACK:
 		iVscrollInc = HIWORD(wParam) - view->iVscrollPos;
@@ -414,7 +428,7 @@ int VscrollMsg(HWND hwnd, WPARAM wParam, view_t *view)
 	if (iVscrollInc != 0)
 	{
 		view->iVscrollPos += iVscrollInc;
-		ScrollWindow(hwnd, 0, -view->cyChar * iVscrollInc, NULL, NULL);
+		ScrollWindow(hwnd, 0, -view->charSize.y * iVscrollInc, NULL, NULL);
 		SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
 		UpdateWindow(hwnd);
 	}
@@ -425,7 +439,7 @@ int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, view_t *view)
 {
 	int iHscrollInc = 0;
 
-	if (mode != width)
+	if (mode != transfer)
 	{
 		switch (LOWORD(wParam))
 		{
@@ -448,7 +462,7 @@ int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, view_t *view)
 		if (iHscrollInc != 0)
 		{
 			view->iHscrollPos += iHscrollInc;
-			ScrollWindow(hwnd, -view->cxChar * iHscrollInc, 0, NULL, NULL);
+			ScrollWindow(hwnd, -view->charSize.x * iHscrollInc, 0, NULL, NULL);
 			SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
 		}
 	}

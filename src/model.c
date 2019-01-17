@@ -6,21 +6,6 @@
 
 /*****************
 	source funcs */
-
-static int IsLastSpaces(LPSTR buf, int bufLen, int curLen)
-{
-	int ans = curLen == 1 ? 0 : 1;
-	int i;
-
-	for (i = 0; i < bufLen; i++)
-		if (!IsSpace(*buf))
-		{
-			ans = 0;
-			break;
-		}
-	return ans;
-}
-
 static void ClearTrStrings(text_t *text)
 {
 	int i;
@@ -55,12 +40,12 @@ static void ClearText(text_t *text)
 	text->maxWidth = 0;
 }
 
-static LPSTR GenFunc(LPSTR buffer, int *cnt, int *maxL)
+static LPSTR GenNewString(LPSTR buffer, int *cnt, int *maxL)
 {
 	LPSTR s = (CHAR*)calloc(*cnt + 1, sizeof(CHAR));
 
 	strncat(s, buffer - *cnt, *cnt);
-	strncat(s, "\0", 1);
+	strcat(s, "\0");
 	*maxL = max(*maxL, *cnt);
 	*cnt = 0;
 
@@ -77,11 +62,10 @@ static LPSTR *BuildStrings(LPSTR buffer, int nOfLines, int *width)
 		if (*buffer != '\n')
 			cnt++;
 		else
-			clStrings[j++] = GenFunc(buffer, &cnt, &maxStrLen);
+			clStrings[j++] = GenNewString(buffer, &cnt, &maxStrLen);
 		buffer++;
-		if (*buffer == '\0')
-			clStrings[j] = GenFunc(buffer, &cnt, &maxStrLen);
 	}
+	clStrings[j] = GenNewString(buffer, &cnt, &maxStrLen);
 
 	*width = maxStrLen;
 	return clStrings;
@@ -170,7 +154,7 @@ int BuildtrStrings(text_t *text, int width)
 
 	int i;
 
-	CleartrStrings(text);
+	ClearTrStrings(text);
 	for (i = 0; *buffer != '\0'; i++)
 	{
 		int newWidth = width;
@@ -186,9 +170,9 @@ int BuildtrStrings(text_t *text, int width)
 		strncat(newBuffer, "\r\n", 2);
 		buffer += newWidth;
 	}
-	text->numTrStrings = (int)GetnumClStrings(newBuffer);
+	text->numTrStrings = (int)GetNumLines(newBuffer);
 	text->curWidth = width;
-	text->trStrings = BuildStrings(newBuffer, (int)GetnumClStrings(newBuffer), &width);
+	text->trStrings = BuildStrings(newBuffer, text->numTrStrings, &width);
 
 	return 0;
 }
@@ -242,7 +226,7 @@ int LoadText(text_t *text, char *fileName)
 	{
 		text->bufLen = strlen(text->buffer);
 		// text->maxWordLen = GetMaxWordLen(text->buffer);
-		text->numClStrings = GetnumClStrings(text->buffer);
+		text->numClStrings = GetNumLines(text->buffer);
 		text->clStrings = BuildStrings(text->buffer, text->numClStrings, &text->maxWidth);
 		CloseHandle(hFile);
 		return 0;
