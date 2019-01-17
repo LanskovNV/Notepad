@@ -40,10 +40,10 @@ typedef struct tagText {
 
 int LoadText(text_t *text, char *fileName);
 int OpenFileFunc(HWND hWnd, text_t *text, int width);
-int BuildtrStrings(text_t *text, int width);
+int BuildTrStrings(text_t *text, int width);
 int SelectNOfLines(text_t text);
 LPSTR *SelectStrings(text_t text);
-int ClassToWidePos(text_t *text);
-int WideToClassPos(text_t *text);
+int ClassToTrPos(text_t *text);
+int TrToClassPos(text_t *text);
 
 #endif // MODEL_H_INCLUDED

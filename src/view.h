@@ -10,9 +10,9 @@
 
 /* struct to display text */
 typedef struct tagView {
-	pos_t client;       /* screen size */
-	pos_t charSize;
-	pos_t caret;        /* current pos on screen */
+	pos_t client;       /* screen size in pixels*/
+	pos_t charSize;     /* in pixels */
+	pos_t caret;        /* current pos on screen in symbols*/
 	int iMaxWidth;      /* max Hscroll length */
 	int iVscrollMax;
 	int iVscrollPos;

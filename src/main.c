@@ -60,6 +60,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	static view_t view;
 	static text_t text;
+	
+	if (view.iSelection != IDM_CLASSIC && view.iSelection != IDM_WIDTH)
+		view.iSelection = IDM_CLASSIC;
 
 	/* load default text (defined in model.h) */
 	if (text.numClStrings == 0)

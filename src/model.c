@@ -4,7 +4,7 @@
 #include "model.h"
 #include "text.h"
 
-/*****************
+/***************** checked 17.01.2019
 	source funcs */
 static void ClearTrStrings(text_t *text)
 {
@@ -25,6 +25,8 @@ static void ClearText(text_t *text)
 
 	for (i = 0; i < text->numClStrings; i++)
 		free(text->clStrings[i]);
+	free(text->clStrings);
+
 	if (text->numTrStrings != 0)
 	{
 		for (i = 0; i < text->numTrStrings; i++)
@@ -33,7 +35,6 @@ static void ClearText(text_t *text)
 	}
 	text->numTrStrings = 0;
 	text->curWidth = 0;
-	free(text->clStrings);
 	free(text->buffer);
 	text->numClStrings = 0;
 	text->clStrings = NULL;
@@ -71,10 +72,10 @@ static LPSTR *BuildStrings(LPSTR buffer, int nOfLines, int *width)
 	return clStrings;
 }
 
-/**************************
+/************************** checked 17.01.2019
 	main text logic funcs */
 
-int WideToClassPos(text_t *text)
+int TrToClassPos(text_t *text)
 {
 	LPSTR *wideBuf = text->trStrings;
 	LPSTR *classBuf = text->clStrings;
@@ -86,12 +87,11 @@ int WideToClassPos(text_t *text)
 	for (i = 0; i <= oldPos.y; i++)
 	{
 		int curStrLen = strlen(wideBuf[i]);;
-		int tmp = i == oldPos.y ? oldPos.x : curStrLen;
+		int tmp = i == oldPos.y ? oldPos.x : curStrLen - 1; // - 0
 
-		for (j = 0; j < tmp; j++)
+		for (j = 0; j <= tmp; j++) // <
 		{
-			if (j >= tmp)
-				break;
+			// if (j >= tmp) break;
 			cnt++;
 		}
 	}
@@ -104,13 +104,13 @@ int WideToClassPos(text_t *text)
 			cnt--;
 	}
 	newPos.x = j;
-	newPos.y = i == 0 ? 0 : i - 1;
+	newPos.y = i - 1; //i == 0 ? 0 : i - 1;
 	text->pos = newPos;
 
 	return 0;
 }
 
-int ClassToWidePos(text_t *text)
+int ClassToTrPos(text_t *text)
 {
 	LPSTR *wideBuf = text->trStrings;
 	LPSTR *classBuf = text->clStrings;
@@ -122,12 +122,11 @@ int ClassToWidePos(text_t *text)
 	for (i = 0; i <= oldPos.y; i++)
 	{
 		int curStrLen = strlen(classBuf[i]);;
-		int tmp = i == oldPos.y ? oldPos.x : curStrLen;
+		int tmp = i == oldPos.y ? oldPos.x : curStrLen - 1;
 
-		for (j = 0; j < tmp; j++)
+		for (j = 0; j <= tmp; j++)
 		{
-			if (j >= tmp)
-				break;
+			// if (j >= tmp) break;
 			cnt++;
 		}
 	}
@@ -141,13 +140,13 @@ int ClassToWidePos(text_t *text)
 	}
 
 	newPos.x = j;
-	newPos.y = i == 0 ? 0 : i - 1;
+	newPos.y = i - 1; // i == 0 ? 0 : i - 1;
 
 	text->pos = newPos;
 	return 0;
 }
 
-int BuildtrStrings(text_t *text, int width)
+int BuildTrStrings(text_t *text, int width)
 {
 	LPSTR buffer = text->buffer;
 	LPSTR newBuffer = (LPSTR)calloc((text->bufLen + 1) * 3, sizeof(CHAR));
@@ -177,21 +176,20 @@ int BuildtrStrings(text_t *text, int width)
 	return 0;
 }
 
-int SelectNOfLines(text_t text)
-{
-	return text.mode == classic ? text.numClStrings : text.numTrStrings;
-}
-
 int LoadText(text_t *text, char *fileName)
 {
 	text->numClStrings = 0;
+	text->numTrStrings = 0;
 	text->maxWidth = 0;
-	text->clStrings = NULL;
-	text->buffer = NULL;
 	text->curWidth = 0;
+	text->bufLen = 0;
+	text->clStrings = NULL;
+	text->trStrings = NULL;
+	text->buffer = NULL;
 	text->mode = classic;
 	text->pos.x = 0;
 	text->pos.y = 0;
+
 	//Открываем файл
 	HANDLE hFile = CreateFile(fileName,
 		GENERIC_READ,
@@ -225,9 +223,9 @@ int LoadText(text_t *text, char *fileName)
 	else
 	{
 		text->bufLen = strlen(text->buffer);
-		// text->maxWordLen = GetMaxWordLen(text->buffer);
 		text->numClStrings = GetNumLines(text->buffer);
 		text->clStrings = BuildStrings(text->buffer, text->numClStrings, &text->maxWidth);
+		text->curWidth = text->maxWidth;
 		CloseHandle(hFile);
 		return 0;
 	}
@@ -255,6 +253,11 @@ int OpenFileFunc(HWND hWnd, text_t *text, int width)
 	InvalidateRect(hWnd, NULL, TRUE);
 
 	return 0;
+}
+
+int SelectNOfLines(text_t text)
+{
+	return text.mode == classic ? text.numClStrings : text.numTrStrings;
 }
 
 LPSTR *SelectStrings(text_t text)
