@@ -6,59 +6,25 @@
 /***************************************
 	Processing movements (arrows etc.) */
 
-/*
-static int IsLastSpaces(LPSTR buf, int bufLen, int curLen)
+static void FixScrollPos(HWND hwnd, view_t *view, text_t *text, int cxBuffer, int cyBuffer)
 {
-	int ans = curLen == 1 ? 0 : 1;
-	int i;
+	int deltaX = text->pos.x - view->iHscrollPos;
+	int deltaY = text->pos.y - view->iVscrollPos;
 
-	for (i = 0; i < bufLen; i++)
-		if (!IsSpace(*buf))
-		{
-			ans = 0;
-			break;
-		}
-	return ans;
-}
-*/
-
-static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
-{
-	LPSTR *buffer = SelectStrings(*text);
-	int nOfLines = SelectNOfLines(*text);
-	int cxBuffer = max(1, view->client.x / view->charSize.x);
-	int cyBuffer = max(1, view->client.y / view->charSize.y);
-
-	if (text->pos.x >= 0)
+	/* fixing horizontal scroll */
+	if (deltaX < 0 || deltaX > cxBuffer)
 	{
-		text->pos.x--;
-		if (text->pos.x < cxBuffer)
-			view->caret.x++;
-		else
-		{
-			view->iHscrollPos += 1;
-			ScrollWindow(hwnd, -view->charSize.x, 0, NULL, NULL);
-			SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
-		}
+		view->iHscrollPos -= cxBuffer - deltaX;
+		ScrollWindow(hwnd, -view->iHscrollPos * view->charSize.x, 0, NULL, NULL);
+		SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
 	}
-	else if (text->pos.y < nOfLines)
+
+	/* fixing vertical scroll */
+	if (deltaY < 0 || deltaY > cyBuffer)
 	{
-		text->pos.x = 0;
-		text->pos.y++;
-		view->caret.x = 0;
-
-		ScrollWindow(hwnd, view->iHscrollPos * view->charSize.x, 0, NULL, NULL);
-		view->iHscrollPos = 0;
-		SetScrollPos(hwnd, SB_HORZ, 0, TRUE);
-
-		if (text->pos.y < cyBuffer)
-			view->caret.y++;
-		else
-		{
-			view->iVscrollPos += 1;
-			ScrollWindow(hwnd, 0, -view->charSize.y, NULL, NULL);
-			SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
-		}
+		view->iVscrollPos -= cyBuffer - deltaY;
+		ScrollWindow(hwnd, 0, -view->iVscrollPos * view->charSize.y, NULL, NULL);
+		SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
 	}
 }
 
@@ -71,45 +37,89 @@ static void MoveRight(HWND hwnd, view_t *view, text_t *text)
 
 	if (text->pos.x < (int)strlen(buffer[text->pos.y]) - 2)
 	{
+		/* changing text pos */
 		text->pos.x++;
-		if (text->pos.x < cxBuffer)
+
+		/* changing caret pos */
+		if (view->caret.x < cxBuffer)
 			view->caret.x++;
-		else
-		{
-			view->iHscrollPos += 1;
-			ScrollWindow(hwnd, -view->charSize.x, 0, NULL, NULL);
-			SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
-		}
 	}
 	else if (text->pos.y < nOfLines)
 	{
+		/* changing text pos */
 		text->pos.x = 0;
 		text->pos.y++;
+
+		/* changing caret pos */
 		view->caret.x = 0;
-
-		ScrollWindow(hwnd, view->iHscrollPos * view->charSize.x, 0, NULL, NULL);
-		view->iHscrollPos = 0;
-		SetScrollPos(hwnd, SB_HORZ, 0, TRUE);
-
-		if (text->pos.y < cyBuffer)
+		if (view->caret.y < cyBuffer)
 			view->caret.y++;
+	}
+
+	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer);
+}
+
+static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
+{
+	LPSTR *buffer = SelectStrings(*text);
+	int nOfLines = SelectNOfLines(*text);
+	int cxBuffer = max(1, view->client.x / view->charSize.x);
+	int cyBuffer = max(1, view->client.y / view->charSize.y);
+
+	/* set scroll pos by pos in text */
+
+	ScrollWindow(hwnd, -text->pos.x * view->charSize.x, text->pos.y * view->charSize.y, NULL, NULL);
+	SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
+	SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
+
+	if (text->pos.x > 0)
+	{
+		/* changing text pos */
+		text->pos.x--;
+
+		/* changing caret pos */
+		if (view->caret.x > 0)
+			view->caret.x--;
+		else 
+		{
+			view->iHscrollPos -= 1;
+			ScrollWindow(hwnd, view->charSize.x, 0, NULL, NULL);
+			SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
+		}
+	}
+	else if (text->pos.y > 0)
+	{
+		/* changing text pos */
+		text->pos.y--;
+		text->pos.x = (int)strlen(buffer[text->pos.y]) - 2;
+
+		/* changing caret pos */
+		if (text->pos.x - view->caret.x >= cxBuffer)
+		{
+			view->caret.x = cxBuffer - 1;
+			ScrollWindow(hwnd, -text->pos.x * view->charSize.x, 0, NULL, NULL);
+			view->iHscrollPos += text->pos.x;
+			SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
+		}
 		else
 		{
-			view->iVscrollPos += 1;
-			ScrollWindow(hwnd, 0, -view->charSize.y, NULL, NULL);
-			SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
+			view->caret.x = cxBuffer - 1;
 		}
 	}
 }
 
+static void MoveDown(HWND hwnd, view_t *view, text_t *text)
+{
+
+}
+
+static void MoveUp(HWND hwnd, view_t *view, text_t *text)
+{
+
+}
+
 static int UpdatePos(HWND hwnd, text_t *text, view_t *view, case_t c)
 {
-	LPSTR *buffer = SelectStrings(*text);
-	pos_t curPos = text->pos;
-	int numClStrings = SelectNOfLines(*text);
-	int lastLineLen = strlen(buffer[numClStrings - 1]);
-	int curStringLen = strlen(buffer[curPos.y]);
-
 	switch (c)
 	{
 	case right:
@@ -119,48 +129,16 @@ static int UpdatePos(HWND hwnd, text_t *text, view_t *view, case_t c)
 		MoveLeft(hwnd, view, text);
 		break;
 	case up:
-		if (curPos.y > 0)
-		{
-			curPos.y -= 1;
-			curStringLen = strlen(buffer[curPos.y]);
-			if (curPos.x > curStringLen)
-				curPos.x = curStringLen - 1;
-
-			if (IsSpace(buffer[curPos.y][curPos.x]))
-			{
-				MoveLeft(hwnd, view, text);
-			}
-		}
+		MoveUp(hwnd, view, text);
 		break;
 	case down:
-		if (curPos.y < numClStrings - 1)
-		{
-			curPos.y += 1;
-			curStringLen = strlen(buffer[curPos.y]);
-			if (curStringLen <= curPos.x)
-				curPos.x = max(0, curStringLen - 1);
-
-			if (IsSpace(buffer[curPos.y][curPos.x]))
-			{
-				if (IsLastSpaces(buffer[curPos.y] + curPos.x, curStringLen - curPos.x, curStringLen))
-					MoveLeft(hwnd, view, text);
-				else
-					MoveRight(hwnd, view, text);
-			}
-		}
+		MoveDown(hwnd, view, text);
 		break;
 	default:
 		printf("error in UpdatePos func: incorrect parameter c");
 		return 1;
 	}
 
-	/*
-	text->pos = curPos;
-	if (chX)
-		view->caret.x = text->pos.x;
-	if (chY)
-		view->caret.y = text->pos.y;
-    */
 	return 0;
 }
 
