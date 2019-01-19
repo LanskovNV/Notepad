@@ -7,6 +7,8 @@
 #define IDM_EXIT 2
 #define IDM_CLASSIC 3
 #define IDM_WIDTH 4
+#define IS_CH_MODE 5
+#define NO_CH_MODE 0
 
 /* struct to display text */
 typedef struct tagView {
@@ -32,7 +34,7 @@ int KeydownMsg(HWND hwnd, WPARAM wParam, text_t *text, view_t *view);
 int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, view_t *view);
 int SetFocusMsg(HWND hwnd, view_t *view);
 int KillFocusMsg(HWND hwnd);
-int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, view_t *view);
+int HscrollMsg(my_mode_t mode, WPARAM wParam, HWND hwnd, view_t *view);
 int VscrollMsg(HWND hwnd, WPARAM wParam, view_t *view);
 
 #endif // VIEW_H_INCLUDED

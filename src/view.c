@@ -6,14 +6,14 @@
 /***************************************
 	Processing movements (arrows etc.) */
 
-static void FixScrollPos(HWND hwnd, view_t *view, text_t *text, int cxBuffer, int cyBuffer)
+static void FixScrollPos(HWND hwnd, view_t *view, text_t *text, int cxBuffer, int cyBuffer, int chMode)
 {
 	int deltaX = text->pos.x - (view->iHscrollPos + cxBuffer);
 	int deltaY = text->pos.y - (view->iVscrollPos + cyBuffer);
 	int scrollSize;
 
 	/* fixing horizontal scroll */
-	if (deltaX > 0 || deltaX < -cxBuffer)
+	if (deltaX > 0 || deltaX < -cxBuffer || chMode)
 	{
 		if (deltaX < 0)
 		{
@@ -31,7 +31,7 @@ static void FixScrollPos(HWND hwnd, view_t *view, text_t *text, int cxBuffer, in
 	}
 
 	/* fixing vertical scroll */
-	if (deltaY > 0 || deltaY < -cyBuffer)
+	if (deltaY > 0 || deltaY < -cyBuffer || chMode)
 	{
 		if (deltaY < 0)
 		{
@@ -65,7 +65,7 @@ static void MoveRight(HWND hwnd, view_t *view, text_t *text)
 		if (view->caret.x < cxBuffer)
 			view->caret.x++;
 	}
-	else if (text->pos.y < nOfLines)
+	else if (text->pos.y < nOfLines - 1)
 	{
 		/* changing text pos */
 		text->pos.x = 0;
@@ -77,13 +77,12 @@ static void MoveRight(HWND hwnd, view_t *view, text_t *text)
 			view->caret.y++;
 	}
 
-	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer);
+	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer, NO_CH_MODE);
 }
 
 static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
 {
 	LPSTR *buffer = SelectStrings(*text);
-	int nOfLines = SelectNOfLines(*text);
 	int cxBuffer = max(1, view->client.x / view->charSize.x);
 	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
@@ -111,7 +110,7 @@ static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
 			view->caret.y--;
 	}
 
-	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer);
+	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer, NO_CH_MODE);
 }
 
 static void MoveDown(HWND hwnd, view_t *view, text_t *text)
@@ -121,7 +120,7 @@ static void MoveDown(HWND hwnd, view_t *view, text_t *text)
 	int cxBuffer = max(1, view->client.x / view->charSize.x);
 	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
-	if (text->pos.y < nOfLines)
+	if (text->pos.y < nOfLines - 1)
 	{
 		/* changing text pos */
 		int tmp = (int)strlen(buffer[text->pos.y + 1]) - 2;
@@ -134,19 +133,18 @@ static void MoveDown(HWND hwnd, view_t *view, text_t *text)
 			if (text->pos.x >= view->iHscrollPos && text->pos.x < view->iHscrollPos + cxBuffer)
 				view->caret.x = text->pos.x;
 		}
-		
+
 		/* changing caret pos */
 		if (view->caret.y < cyBuffer)
 			view->caret.y++;
 	}
 
-	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer);
+	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer, NO_CH_MODE);
 }
 
 static void MoveUp(HWND hwnd, view_t *view, text_t *text)
 {
 	LPSTR *buffer = SelectStrings(*text);
-	int nOfLines = SelectNOfLines(*text);
 	int cxBuffer = max(1, view->client.x / view->charSize.x);
 	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
@@ -169,7 +167,7 @@ static void MoveUp(HWND hwnd, view_t *view, text_t *text)
 			view->caret.y--;
 	}
 
-	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer);
+	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer, NO_CH_MODE);
 }
 
 static int UpdatePos(HWND hwnd, text_t *text, view_t *view, case_t c)
@@ -257,7 +255,7 @@ int VscrollMsg(HWND hwnd, WPARAM wParam, view_t *view)
 		iVscrollInc = min(-1, -view->client.y / view->charSize.y);
 		break;
 	case SB_PAGEDOWN:
-		iVscrollInc = max(1, view->client.y / view->charSize.y); 
+		iVscrollInc = max(1, view->client.y / view->charSize.y);
 		break;
 	case SB_THUMBTRACK:
 		iVscrollInc = HIWORD(wParam) - view->iVscrollPos;
@@ -279,7 +277,7 @@ int VscrollMsg(HWND hwnd, WPARAM wParam, view_t *view)
 	return 0;
 }
 
-int HscrollMsg(mode_t mode, WPARAM wParam, HWND hwnd, view_t *view)
+int HscrollMsg(my_mode_t mode, WPARAM wParam, HWND hwnd, view_t *view)
 {
 	int iHscrollInc = 0;
 
@@ -347,7 +345,7 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, text_t *text, view_t *view)
 		curnumClStrings = text->numTrStrings;
 		view->iMaxWidth = text->curWidth;
 	}
-	
+
 	/* horizontal scroll */
 	tmp = view->iMaxWidth - view->client.x / view->charSize.x;
 	view->iHscrollMax = max(0, tmp);
@@ -415,11 +413,20 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, view_t *vi
 {
 	HMENU hMenu = GetMenu(hwnd);
 	int isClassic = 1;
+	int cxBuffer = max(1, view->client.x / view->charSize.x);
+	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
 	switch (LOWORD(wParam))
 	{
 	case IDM_OPEN:
 		OpenFileFunc(hwnd, text, view->client.x);
+		view->caret.x = 0;
+		view->caret.y = 0;
+		text->pos.x = 0;
+		text->pos.y = 0;
+		view->iHscrollPos = 0;
+		view->iVscrollPos = 0;
+		ResizeMsg(hwnd, lparam, text, view);
 		return 0;
 	case IDM_EXIT:
 		SendMessage(hwnd, WM_CLOSE, 0, 0L);
@@ -437,6 +444,8 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, view_t *vi
 		}
 		SetCaretPos(view->caret.x * view->charSize.x, view->caret.y * view->charSize.y);
 		CheckMode(hwnd, &view->iSelection, hMenu, wParam);
+
+		FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer, IS_CH_MODE);
 		return 0;
 	}
 	return 0;

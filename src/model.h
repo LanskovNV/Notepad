@@ -9,7 +9,7 @@
 typedef enum {
 	classic,
 	transfer
-} mode_t;
+} my_mode_t;
 
 /* move in text cases (arrows cases) */
 typedef enum {
@@ -26,7 +26,7 @@ typedef struct {
 
 /* struct to work with text */
 typedef struct tagText {
-	mode_t mode;        /* active mode */
+	my_mode_t mode;        /* active mode */
 	pos_t pos;          /* pos in text in symbols */
 	LPSTR *clStrings;   /* array of clStrings in classic mode */
 	LPSTR *trStrings;   /* array of clStrings in transfer mode */
