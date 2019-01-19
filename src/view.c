@@ -8,22 +8,43 @@
 
 static void FixScrollPos(HWND hwnd, view_t *view, text_t *text, int cxBuffer, int cyBuffer)
 {
-	int deltaX = text->pos.x - view->iHscrollPos;
-	int deltaY = text->pos.y - view->iVscrollPos;
+	int deltaX = text->pos.x - (view->iHscrollPos + cxBuffer);
+	int deltaY = text->pos.y - (view->iVscrollPos + cyBuffer);
+	int scrollSize;
 
 	/* fixing horizontal scroll */
-	if (deltaX < 0 || deltaX > cxBuffer)
+	if (deltaX > 0 || deltaX < -cxBuffer)
 	{
-		view->iHscrollPos -= cxBuffer - deltaX;
-		ScrollWindow(hwnd, -view->iHscrollPos * view->charSize.x, 0, NULL, NULL);
+		if (deltaX < 0)
+		{
+			scrollSize = deltaX + cxBuffer;
+			view->caret.x = 0;
+		}
+		else
+		{
+			view->caret.x = cxBuffer - 1;
+			scrollSize = deltaX;
+		}
+		view->iHscrollPos += scrollSize;
+		ScrollWindow(hwnd, -scrollSize * view->charSize.x, 0, NULL, NULL);
 		SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
 	}
 
 	/* fixing vertical scroll */
-	if (deltaY < 0 || deltaY > cyBuffer)
+	if (deltaY > 0 || deltaY < -cyBuffer)
 	{
-		view->iVscrollPos -= cyBuffer - deltaY;
-		ScrollWindow(hwnd, 0, -view->iVscrollPos * view->charSize.y, NULL, NULL);
+		if (deltaY < 0)
+		{
+			scrollSize = deltaY + cyBuffer;
+			view->caret.y = 0;
+		}
+		else
+		{
+			view->caret.y = cyBuffer - 1;
+			scrollSize = deltaY;
+		}
+		view->iVscrollPos += scrollSize;
+		ScrollWindow(hwnd, 0, -scrollSize * view->charSize.y, NULL, NULL);
 		SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
 	}
 }
@@ -66,12 +87,6 @@ static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
 	int cxBuffer = max(1, view->client.x / view->charSize.x);
 	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
-	/* set scroll pos by pos in text */
-
-	ScrollWindow(hwnd, -text->pos.x * view->charSize.x, text->pos.y * view->charSize.y, NULL, NULL);
-	SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
-	SetScrollPos(hwnd, SB_VERT, view->iVscrollPos, TRUE);
-
 	if (text->pos.x > 0)
 	{
 		/* changing text pos */
@@ -80,42 +95,81 @@ static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
 		/* changing caret pos */
 		if (view->caret.x > 0)
 			view->caret.x--;
-		else 
-		{
-			view->iHscrollPos -= 1;
-			ScrollWindow(hwnd, view->charSize.x, 0, NULL, NULL);
-			SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
-		}
 	}
 	else if (text->pos.y > 0)
 	{
+		int tmp;
+
 		/* changing text pos */
 		text->pos.y--;
-		text->pos.x = (int)strlen(buffer[text->pos.y]) - 2;
+		tmp = (int)strlen(buffer[text->pos.y]) - 2;
+		text->pos.x = tmp > 0 ? tmp : 0;
 
 		/* changing caret pos */
-		if (text->pos.x - view->caret.x >= cxBuffer)
-		{
-			view->caret.x = cxBuffer - 1;
-			ScrollWindow(hwnd, -text->pos.x * view->charSize.x, 0, NULL, NULL);
-			view->iHscrollPos += text->pos.x;
-			SetScrollPos(hwnd, SB_HORZ, view->iHscrollPos, TRUE);
-		}
-		else
-		{
-			view->caret.x = cxBuffer - 1;
-		}
+		view->caret.x = text->pos.x;
+		if (view->caret.y > 0)
+			view->caret.y--;
 	}
+
+	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer);
 }
 
 static void MoveDown(HWND hwnd, view_t *view, text_t *text)
 {
+	LPSTR *buffer = SelectStrings(*text);
+	int nOfLines = SelectNOfLines(*text);
+	int cxBuffer = max(1, view->client.x / view->charSize.x);
+	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
+	if (text->pos.y < nOfLines)
+	{
+		/* changing text pos */
+		int tmp = (int)strlen(buffer[text->pos.y + 1]) - 2;
+		int strLen = tmp > 0 ? tmp : 0;
+
+		text->pos.y++;
+		if (strLen < text->pos.x)
+		{
+			text->pos.x = strLen;
+			if (text->pos.x >= view->iHscrollPos && text->pos.x < view->iHscrollPos + cxBuffer)
+				view->caret.x = text->pos.x;
+		}
+		
+		/* changing caret pos */
+		if (view->caret.y < cyBuffer)
+			view->caret.y++;
+	}
+
+	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer);
 }
 
 static void MoveUp(HWND hwnd, view_t *view, text_t *text)
 {
+	LPSTR *buffer = SelectStrings(*text);
+	int nOfLines = SelectNOfLines(*text);
+	int cxBuffer = max(1, view->client.x / view->charSize.x);
+	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
+	if (text->pos.y > 0)
+	{
+		/* changing text pos */
+		int tmp = (int)strlen(buffer[text->pos.y - 1]) - 2;
+		int strLen = tmp > 0 ? tmp : 0;
+
+		text->pos.y--;
+		if (strLen < text->pos.x)
+		{
+			text->pos.x = strLen;
+			if (text->pos.x >= view->iHscrollPos && text->pos.x < view->iHscrollPos + cxBuffer)
+				view->caret.x = text->pos.x;
+		}
+
+		/* changing caret pos */
+		if (view->caret.y > 0)
+			view->caret.y--;
+	}
+
+	FixScrollPos(hwnd, view, text, cxBuffer, cyBuffer);
 }
 
 static int UpdatePos(HWND hwnd, text_t *text, view_t *view, case_t c)
