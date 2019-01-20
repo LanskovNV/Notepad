@@ -6,6 +6,7 @@
 /***************************************
 	Processing movements (arrows etc.) */
 
+
 static void FixScrollPos(HWND hwnd, view_t *view, text_t *text, int cxBuffer, int cyBuffer, int chMode)
 {
 	int deltaX = text->pos.x - (view->iHscrollPos + cxBuffer);
@@ -340,7 +341,7 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, text_t *text, view_t *view)
 	}
 	else // text->mode == transfer
 	{
-		if (text->trStrings == NULL || text->curWidth != nwidth)
+		if (text->transfer == NULL || text->curWidth != nwidth)
 			BuildTrStrings(text, nwidth);
 		curnumClStrings = text->numTrStrings;
 		view->iMaxWidth = text->curWidth;
@@ -366,7 +367,7 @@ int ResizeMsg(HWND hwnd, LPARAM lParam, text_t *text, view_t *view)
 int PaintMsg(HWND hwnd, text_t *text, view_t *view)
 {
 	PAINTSTRUCT ps;
-	LPSTR *curStrings = NULL;
+	string_t *curStrings = NULL;
 	int curLen = 0, iPaintBeg, iPaintEnd, x, y, i;
 	HDC hdc;
 
@@ -383,8 +384,8 @@ int PaintMsg(HWND hwnd, text_t *text, view_t *view)
 		y = view->charSize.y * (i - view->iVscrollPos);
 		TextOut(
 			hdc, x, y,
-			curStrings[i],
-			strlen(curStrings[i])
+			curStrings[i].string,
+			curStrings[i].strLen
 		);
 		SetTextAlign(hdc, TA_LEFT | TA_TOP);
 	}
@@ -426,7 +427,7 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, view_t *vi
 		text->pos.y = 0;
 		view->iHscrollPos = 0;
 		view->iVscrollPos = 0;
-		ResizeMsg(hwnd, lparam, text, view);
+		ResizeMsg(hwnd, lParam, text, view);
 		return 0;
 	case IDM_EXIT:
 		SendMessage(hwnd, WM_CLOSE, 0, 0L);

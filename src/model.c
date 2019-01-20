@@ -27,7 +27,7 @@ static string_t *BuildStrings(LPSTR buffer, int nOfStrings, int *maxWidth)
 
 	while (cntStr < nOfStrings)
 	{
-		while (*buffer != '\n')
+		while (*buffer != '\n' && *buffer != '\0')
 		{
 			cntSymb++;
 			buffer++;
@@ -50,17 +50,52 @@ static string_t *BuildStrings(LPSTR buffer, int nOfStrings, int *maxWidth)
 
 int TrToClassPos(text_t *text)
 {
-
+	return 0;
 }
 
 int ClassToTrPos(text_t *text)
 {
-
+	return 0;
 }
 
-int BuildTrStrings(text_t *text, int width)
+int BuildTrStrings(text_t *text, int width) // width in symbols
 {
+	int numOfStrings = (text->bufLen / width + 1) * 2;
+	string_t *transfer = malloc(sizeof(string_t) * numOfStrings);
+	LPSTR buffer = text->buffer;
+	int cntStr = 0;
+	int cntBuf = 0;
+	int cntSymb = width;
 
+	while (cntBuf + width < text->bufLen)
+	{
+		if (!IsSpace(*(buffer + width)) && !IsSpace(*(buffer + width + 1)))
+		{
+			int i;
+
+			for (i = width; i > 0 && !IsSpace(*(buffer + i)); i--)	{}
+			if (i != 0)	cntSymb = i;
+		}
+		transfer[cntStr].string = buffer;
+		transfer[cntStr].strLen = cntSymb;
+		buffer += cntSymb;
+		cntStr++;
+		cntBuf += cntSymb;
+		cntSymb = width;
+	}
+	if (cntBuf != text->bufLen)
+	{
+		cntSymb = text->bufLen - cntBuf;
+		transfer[cntStr].string = buffer + cntSymb;
+		transfer[cntStr].strLen = cntSymb;
+		cntStr++;
+	}
+	text->curWidth = width;
+	text->numTrStrings = cntStr;
+	realloc(transfer, sizeof(string_t) * cntStr);
+	text->transfer = transfer;
+
+	return 0;
 }
 
 int LoadText(text_t *text, char *fileName)
@@ -108,6 +143,7 @@ int LoadText(text_t *text, char *fileName)
 	else
 	{
 		text->bufLen = strlen(text->buffer);
+		text->numClStrings = GetNumLines(text->buffer);
 		text->classic = BuildStrings(text->buffer, text->numClStrings, &text->maxWidth);
 		text->curWidth = text->maxWidth;
 		CloseHandle(hFile);
