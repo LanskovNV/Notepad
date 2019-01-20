@@ -1,7 +1,7 @@
 #ifndef MODEL_H_INCLUDED
 #define MODEL_H_INCLUDED
 
-#define FILE_NAME "преступление и наказание.txt"
+#define FILE_NAME "text.txt"
 
 /* two modes:
 	- classic mode
@@ -50,5 +50,5 @@ int SelectNOfLines(text_t text);
 string_t *SelectStrings(text_t text);
 int ClassToTrPos(text_t *text);
 int TrToClassPos(text_t *text);
-
+void ClearText(text_t *text);
 #endif // MODEL_H_INCLUDED

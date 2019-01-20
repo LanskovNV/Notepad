@@ -1,15 +1,2 @@
-﻿  main.c
-  model.c
-  view.c
-d:\politech\notepad\src\view.c(54): warning C4047: 'initializing': 'LPSTR *' differs in levels of indirection from 'string_t *'
-d:\politech\notepad\src\view.c(85): warning C4047: 'initializing': 'LPSTR *' differs in levels of indirection from 'string_t *'
-d:\politech\notepad\src\view.c(118): warning C4047: 'initializing': 'LPSTR *' differs in levels of indirection from 'string_t *'
-d:\politech\notepad\src\view.c(147): warning C4047: 'initializing': 'LPSTR *' differs in levels of indirection from 'string_t *'
-d:\politech\notepad\src\view.c(343): error C2039: 'trStrings': is not a member of 'tagText'
-  d:\politech\notepad\src\model.h(33): note: see declaration of 'tagText'
-d:\politech\notepad\src\view.c(373): warning C4047: '=': 'LPSTR *' differs in levels of indirection from 'string_t *'
-d:\politech\notepad\src\view.c(429): error C2065: 'lparam': undeclared identifier
-  Generating Code...
-d:\politech\notepad\src\model.c(59): warning C4716: 'ClassToTrPos': must return a value
-d:\politech\notepad\src\model.c(64): warning C4716: 'BuildTrStrings': must return a value
-d:\politech\notepad\src\model.c(54): warning C4716: 'TrToClassPos': must return a value
+﻿  model.c
+  vsProj.vcxproj -> D:\POLITECH\Notepad\vsProj\Debug\vsProj.exe

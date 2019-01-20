@@ -52,12 +52,12 @@ static void FixScrollPos(HWND hwnd, view_t *view, text_t *text, int cxBuffer, in
 
 static void MoveRight(HWND hwnd, view_t *view, text_t *text)
 {
-	LPSTR *buffer = SelectStrings(*text);
+	string_t *buffer = SelectStrings(*text);
 	int nOfLines = SelectNOfLines(*text);
 	int cxBuffer = max(1, view->client.x / view->charSize.x);
 	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
-	if (text->pos.x < (int)strlen(buffer[text->pos.y]) - 2)
+	if (text->pos.x < buffer[text->pos.y].strLen - 2)
 	{
 		/* changing text pos */
 		text->pos.x++;
@@ -83,7 +83,7 @@ static void MoveRight(HWND hwnd, view_t *view, text_t *text)
 
 static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
 {
-	LPSTR *buffer = SelectStrings(*text);
+	string_t *buffer = SelectStrings(*text);
 	int cxBuffer = max(1, view->client.x / view->charSize.x);
 	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
@@ -102,7 +102,7 @@ static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
 
 		/* changing text pos */
 		text->pos.y--;
-		tmp = (int)strlen(buffer[text->pos.y]) - 2;
+		tmp = buffer[text->pos.y].strLen - 2;
 		text->pos.x = tmp > 0 ? tmp : 0;
 
 		/* changing caret pos */
@@ -116,7 +116,7 @@ static void MoveLeft(HWND hwnd, view_t *view, text_t *text)
 
 static void MoveDown(HWND hwnd, view_t *view, text_t *text)
 {
-	LPSTR *buffer = SelectStrings(*text);
+	string_t *buffer = SelectStrings(*text);
 	int nOfLines = SelectNOfLines(*text);
 	int cxBuffer = max(1, view->client.x / view->charSize.x);
 	int cyBuffer = max(1, view->client.y / view->charSize.y);
@@ -124,7 +124,7 @@ static void MoveDown(HWND hwnd, view_t *view, text_t *text)
 	if (text->pos.y < nOfLines - 1)
 	{
 		/* changing text pos */
-		int tmp = (int)strlen(buffer[text->pos.y + 1]) - 2;
+		int tmp = buffer[text->pos.y + 1].strLen - 2;
 		int strLen = tmp > 0 ? tmp : 0;
 
 		text->pos.y++;
@@ -145,14 +145,14 @@ static void MoveDown(HWND hwnd, view_t *view, text_t *text)
 
 static void MoveUp(HWND hwnd, view_t *view, text_t *text)
 {
-	LPSTR *buffer = SelectStrings(*text);
+	string_t *buffer = SelectStrings(*text);
 	int cxBuffer = max(1, view->client.x / view->charSize.x);
 	int cyBuffer = max(1, view->client.y / view->charSize.y);
 
 	if (text->pos.y > 0)
 	{
 		/* changing text pos */
-		int tmp = (int)strlen(buffer[text->pos.y - 1]) - 2;
+		int tmp = buffer[text->pos.y - 1].strLen - 2;
 		int strLen = tmp > 0 ? tmp : 0;
 
 		text->pos.y--;
@@ -423,10 +423,14 @@ int CommandMsg(HWND hwnd, WPARAM wParam, LPARAM lParam, text_t *text, view_t *vi
 		OpenFileFunc(hwnd, text, view->client.x);
 		view->caret.x = 0;
 		view->caret.y = 0;
+		view->iSelection = IDM_CLASSIC;
 		text->pos.x = 0;
 		text->pos.y = 0;
 		view->iHscrollPos = 0;
 		view->iVscrollPos = 0;
+		text->mode = classic;
+		CheckMenuItem(hMenu, IDM_WIDTH, MF_UNCHECKED);
+		CheckMenuItem(hMenu, IDM_CLASSIC, MF_CHECKED);
 		ResizeMsg(hwnd, lParam, text, view);
 		return 0;
 	case IDM_EXIT:

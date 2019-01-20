@@ -7,15 +7,25 @@
 /***************** checked 17.01.2019
 	source funcs */
 
-static void ClearText(text_t *text)
+void ClearText(text_t *text)
 {
 	text->numTrStrings = 0;
 	text->numClStrings = 0;
 	text->maxWidth = 0;
 	text->curWidth = 0;
-	free(text->buffer);
+	if (text->transfer != NULL)
+		free(text->transfer);
 	free(text->classic);
-	free(text->transfer);
+	free(text->buffer);
+}
+
+static void ClearStrings(text_t *text)
+{
+	if (text->transfer != NULL && text->numTrStrings != 0)
+	{
+		free(text->transfer);
+		text->transfer = NULL;
+	}
 }
 
 static string_t *BuildStrings(LPSTR buffer, int nOfStrings, int *maxWidth)
@@ -50,46 +60,123 @@ static string_t *BuildStrings(LPSTR buffer, int nOfStrings, int *maxWidth)
 
 int TrToClassPos(text_t *text)
 {
+	string_t *wideBuf = text->transfer;
+	string_t *classBuf = text->classic;
+	pos_t oldPos = text->pos;
+	pos_t newPos;
+	int i, j;
+	int cnt = 0;
+
+	for (i = 0; i <= oldPos.y; i++)
+	{
+		int curStrLen = wideBuf[i].strLen;
+		int tmp = i == oldPos.y ? oldPos.x : curStrLen;
+
+		for (j = 0; j < tmp; j++)
+		{
+			if (j >= tmp)
+				break;
+			cnt++;
+		}
+	}
+
+	for (i = 0; cnt > 0; i++)
+	{
+		int curStrLen = classBuf[i].strLen;
+
+		for (j = 0; j < curStrLen && cnt > 0; j++)
+			cnt--;
+	}
+	newPos.x = j;
+	newPos.y = i == 0 ? 0 : i - 1;
+	text->pos = newPos;
+
 	return 0;
 }
 
 int ClassToTrPos(text_t *text)
 {
+	string_t *wideBuf = text->transfer;
+	string_t *classBuf = text->classic;
+	pos_t oldPos = text->pos;
+	pos_t newPos;
+	int i, j;
+	int cnt = 0;
+
+	for (i = 0; i <= oldPos.y; i++)
+	{
+		int curStrLen = classBuf[i].strLen;
+		int tmp = i == oldPos.y ? oldPos.x : curStrLen;
+
+		for (j = 0; j < tmp; j++)
+		{
+			if (j >= tmp)
+				break;
+			cnt++;
+		}
+	}
+
+	for (i = 0; cnt > 0; i++)
+	{
+		int curStrLen = wideBuf[i].strLen;
+
+		for (j = 0; j < curStrLen && cnt > 0; j++)
+			cnt--;
+	}
+
+	newPos.x = j;
+	newPos.y = i == 0 ? 0 : i - 1;
+
+	text->pos = newPos;
 	return 0;
 }
 
 int BuildTrStrings(text_t *text, int width) // width in symbols
 {
-	int numOfStrings = (text->bufLen / width + 1) * 2;
-	string_t *transfer = malloc(sizeof(string_t) * numOfStrings);
-	LPSTR buffer = text->buffer;
+	string_t *transfer = malloc(sizeof(string_t) * text->bufLen);
 	int cntStr = 0;
-	int cntBuf = 0;
-	int cntSymb = width;
+	int j;
 
-	while (cntBuf + width < text->bufLen)
+	ClearStrings(text);
+	for (j = 0; j < text->numClStrings; j++)
 	{
-		if (!IsSpace(*(buffer + width)) && !IsSpace(*(buffer + width + 1)))
+		if (text->classic[j].strLen < width)
 		{
-			int i;
-
-			for (i = width; i > 0 && !IsSpace(*(buffer + i)); i--)	{}
-			if (i != 0)	cntSymb = i;
+			transfer[cntStr].string = text->classic[j].string;
+			transfer[cntStr].strLen = text->classic[j].strLen;
+			cntStr++;
 		}
-		transfer[cntStr].string = buffer;
-		transfer[cntStr].strLen = cntSymb;
-		buffer += cntSymb;
-		cntStr++;
-		cntBuf += cntSymb;
-		cntSymb = width;
+		else
+		{
+			int tmp = text->classic[j].strLen % width == 0 ? 0 : 1;
+			int newLines = text->classic[j].strLen / width + tmp;
+			int k, cntSymb = width;
+			LPSTR buffer = text->classic[j].string;
+			int lastLen = text->classic[j].strLen;
+
+			for (k = 0; k < newLines; k++)
+			{
+				if (lastLen > width && !IsSpace(*(buffer + width - 1)) && !IsSpace(*(buffer + width)))
+				{
+					int i;
+
+					for (i = cntSymb; i > 0 && !IsSpace(*(buffer + i)); i--) {}
+					if (i != 0)	cntSymb = i;
+				}
+				transfer[cntStr].string = buffer;
+				if (lastLen >= width)
+					transfer[cntStr].strLen = cntSymb;
+				else
+					transfer[cntStr].strLen = lastLen;
+				buffer += cntSymb;
+				lastLen -= cntSymb;
+				cntStr++;
+				cntSymb = width;
+			}
+
+		}
 	}
-	if (cntBuf != text->bufLen)
-	{
-		cntSymb = text->bufLen - cntBuf;
-		transfer[cntStr].string = buffer + cntSymb;
-		transfer[cntStr].strLen = cntSymb;
-		cntStr++;
-	}
+
 	text->curWidth = width;
 	text->numTrStrings = cntStr;
 	realloc(transfer, sizeof(string_t) * cntStr);

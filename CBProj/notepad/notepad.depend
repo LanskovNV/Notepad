@@ -27,3 +27,24 @@
 	"text.h"
 	"view.h"
 
+1547926239 source:d:\politech\notepad\src\main.c
+	<windows.h>
+	"view.h"
+
+1547926239 d:\politech\notepad\src\view.h
+	"model.h"
+
+1547994060 d:\politech\notepad\src\model.h
+
+1544888188 source:d:\politech\notepad\src\text.c
+	<windows.h>
+	"text.h"
+
+1544888188 d:\politech\notepad\src\text.h
+
+1547989197 source:d:\politech\notepad\src\view.c
+	<windows.h>
+	<stdio.h>
+	"text.h"
+	"view.h"
+
