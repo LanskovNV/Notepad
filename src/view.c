@@ -219,6 +219,9 @@ int KeydownMsg(HWND hwnd, WPARAM wParam, text_t *text, view_t *view)
 	case VK_UP:
 		UpdatePos(hwnd, text, view, up);
 		break;
+	case VK_END:
+		SendMessage(hwnd, WM_VSCROLL, SB_BOTTOM, 0L);
+		break;
 	case VK_DOWN:
 		UpdatePos(hwnd, text, view, down);
 		break;
