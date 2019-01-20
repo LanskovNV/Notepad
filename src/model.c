@@ -6,70 +6,43 @@
 
 /***************** checked 17.01.2019
 	source funcs */
-static void ClearTrStrings(text_t *text)
-{
-	int i;
-
-	if (text->numTrStrings != 0)
-	{
-		for (i = 0; i < (int)text->numTrStrings; i++)
-			free(text->trStrings[i]);
-		free(text->trStrings);
-	}
-	text->numTrStrings = 0;
-}
 
 static void ClearText(text_t *text)
 {
-	int i;
-
-	for (i = 0; i < text->numClStrings; i++)
-		free(text->clStrings[i]);
-	free(text->clStrings);
-
-	if (text->numTrStrings != 0)
-	{
-		for (i = 0; i < text->numTrStrings; i++)
-			free(text->trStrings[i]);
-		free(text->trStrings);
-	}
 	text->numTrStrings = 0;
+	text->numClStrings = 0;
+	text->maxWidth = 0;
 	text->curWidth = 0;
 	free(text->buffer);
-	text->numClStrings = 0;
-	text->clStrings = NULL;
-	text->maxWidth = 0;
+	free(text->classic);
+	free(text->transfer);
 }
 
-static LPSTR GenNewString(LPSTR buffer, int *cnt, int *maxL)
+static string_t *BuildStrings(LPSTR buffer, int nOfStrings, int *maxWidth)
 {
-	LPSTR s = (CHAR*)calloc(*cnt + 1, sizeof(CHAR));
+	string_t *strings = malloc(sizeof(string_t) * nOfStrings);
+	int cntSymb = 0;
+	int cntStr = 0;
+	int max = 0;
 
-	strncat(s, buffer - *cnt, *cnt);
-	strcat(s, "\0");
-	*maxL = max(*maxL, *cnt);
-	*cnt = 0;
-
-	return s;
-}
-
-static LPSTR *BuildStrings(LPSTR buffer, int nOfLines, int *width)
-{
-	int cnt = 0, maxStrLen = 0, j = 0;
-	LPSTR *clStrings = (CHAR**)calloc(nOfLines, sizeof(CHAR*));
-
-	while (*buffer != '\0')
+	while (cntStr < nOfStrings)
 	{
-		if (*buffer != '\n')
-			cnt++;
-		else
-			clStrings[j++] = GenNewString(buffer, &cnt, &maxStrLen);
+		while (*buffer != '\n')
+		{
+			cntSymb++;
+			buffer++;
+		}
+		strings[cntStr].strLen = cntSymb;
+		strings[cntStr].string = buffer - cntSymb;
+		if (cntSymb > max)
+			max = cntSymb;
+		cntSymb = 0;
+		cntStr++;
 		buffer++;
 	}
-	clStrings[j] = GenNewString(buffer, &cnt, &maxStrLen);
+	*maxWidth = max;
 
-	*width = maxStrLen;
-	return clStrings;
+	return strings;
 }
 
 /************************** checked 17.01.2019
@@ -77,103 +50,17 @@ static LPSTR *BuildStrings(LPSTR buffer, int nOfLines, int *width)
 
 int TrToClassPos(text_t *text)
 {
-	LPSTR *wideBuf = text->trStrings;
-	LPSTR *classBuf = text->clStrings;
-	pos_t oldPos = text->pos;
-	pos_t newPos;
-	int i, j;
-	int cnt = 0;
 
-	for (i = 0; i <= oldPos.y; i++)
-	{
-		int curStrLen = strlen(wideBuf[i]);;
-		int tmp = i == oldPos.y ? oldPos.x : curStrLen - 1; // - 0
-
-		for (j = 0; j <= tmp; j++) // <
-		{
-			// if (j >= tmp) break;
-			cnt++;
-		}
-	}
-
-	for (i = 0; cnt > 0; i++)
-	{
-		int curStrLen = strlen(classBuf[i]);;
-
-		for (j = 0; j < curStrLen && cnt > 0; j++)
-			cnt--;
-	}
-	newPos.x = j;
-	newPos.y = i - 1; //i == 0 ? 0 : i - 1;
-	text->pos = newPos;
-
-	return 0;
 }
 
 int ClassToTrPos(text_t *text)
 {
-	LPSTR *wideBuf = text->trStrings;
-	LPSTR *classBuf = text->clStrings;
-	pos_t oldPos = text->pos;
-	pos_t newPos;
-	int i, j;
-	int cnt = 0;
 
-	for (i = 0; i <= oldPos.y; i++)
-	{
-		int curStrLen = strlen(classBuf[i]);;
-		int tmp = i == oldPos.y ? oldPos.x : curStrLen - 1;
-
-		for (j = 0; j <= tmp; j++)
-		{
-			// if (j >= tmp) break;
-			cnt++;
-		}
-	}
-
-	for (i = 0; cnt > 0; i++)
-	{
-		int curStrLen = strlen(wideBuf[i]);;
-
-		for (j = 0; j < curStrLen && cnt > 0; j++)
-			cnt--;
-	}
-
-	newPos.x = j;
-	newPos.y = i - 1; // i == 0 ? 0 : i - 1;
-
-	text->pos = newPos;
-	return 0;
 }
 
 int BuildTrStrings(text_t *text, int width)
 {
-	LPSTR buffer = text->buffer;
-	LPSTR newBuffer = (LPSTR)calloc((text->bufLen + 1) * 3, sizeof(CHAR));
 
-	int i;
-
-	ClearTrStrings(text);
-	for (i = 0; *buffer != '\0'; i++)
-	{
-		int newWidth = width;
-
-		if ((int)strlen(buffer) > newWidth)
-			while (!IsSpace(*(buffer + newWidth)) && newWidth != 0)
-				newWidth--;
-		if (newWidth == 0)
-			newWidth = width;
-
-		newWidth = min(newWidth, (int)strlen(buffer));
-		strncat(newBuffer, buffer, newWidth);
-		strncat(newBuffer, "\r\n", 2);
-		buffer += newWidth;
-	}
-	text->numTrStrings = (int)GetNumLines(newBuffer);
-	text->curWidth = width;
-	text->trStrings = BuildStrings(newBuffer, text->numTrStrings, &width);
-
-	return 0;
 }
 
 int LoadText(text_t *text, char *fileName)
@@ -183,8 +70,6 @@ int LoadText(text_t *text, char *fileName)
 	text->maxWidth = 0;
 	text->curWidth = 0;
 	text->bufLen = 0;
-	text->clStrings = NULL;
-	text->trStrings = NULL;
 	text->buffer = NULL;
 	text->mode = classic;
 	text->pos.x = 0;
@@ -223,8 +108,7 @@ int LoadText(text_t *text, char *fileName)
 	else
 	{
 		text->bufLen = strlen(text->buffer);
-		text->numClStrings = GetNumLines(text->buffer);
-		text->clStrings = BuildStrings(text->buffer, text->numClStrings, &text->maxWidth);
+		text->classic = BuildStrings(text->buffer, text->numClStrings, &text->maxWidth);
 		text->curWidth = text->maxWidth;
 		CloseHandle(hFile);
 		return 0;
@@ -260,7 +144,7 @@ int SelectNOfLines(text_t text)
 	return text.mode == classic ? text.numClStrings : text.numTrStrings;
 }
 
-LPSTR *SelectStrings(text_t text)
+string_t *SelectStrings(text_t text)
 {
-	return text.mode == classic ? text.clStrings : text.trStrings;
+	return text.mode == classic ? text.classic : text.transfer;
 }
